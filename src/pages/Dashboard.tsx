@@ -911,10 +911,28 @@ export default function Dashboard() {
         /* ignore */
       }
     }, 300);
+    let ro: ResizeObserver | null = null;
+    try {
+      ro = new ResizeObserver(() => {
+        try {
+          map?.invalidateSize();
+        } catch {
+          /* ignore */
+        }
+      });
+      ro.observe(el);
+    } catch {
+      /* resize observer unavailable */
+    }
     locate(false);
     selectSpot(spotRef.current);
     return () => {
       aliveRef.current = false;
+      try {
+        ro?.disconnect();
+      } catch {
+        /* ignore */
+      }
       searchSeqRef.current++;
       window.clearTimeout(searchTimerRef.current);
       window.clearTimeout(thirstTimerRef.current);
@@ -1268,8 +1286,9 @@ export default function Dashboard() {
   /* ------------------------- render ------------------------- */
 
   return (
-    <div className="fox-stage" style={{ maxWidth: 430, width: '94vw' }}>
+    <div className="fox-screen">
       <style>{`
+        .fox-screen{height:100dvh;max-width:430px;width:94vw;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;padding:0 16px calc(10px + env(safe-area-inset-bottom));animation:fox-in .35s ease both}
         .leaflet-container{background:#2e2e30;font:inherit}
         .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.5) contrast(.85)}
         .leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#555!important;font-size:9px!important;padding:1px 6px!important}
@@ -1320,22 +1339,22 @@ export default function Dashboard() {
       </div>
 
       {/* hero */}
-      <div className="rise relative mt-3 overflow-hidden rounded-[28px] border border-white/10" style={{ background: 'linear-gradient(165deg,#1a1a21 0%,#0c0c10 70%)', boxShadow: '0 18px 50px rgba(0,0,0,.55), 0 0 44px rgba(255,107,53,.12)', animationDelay: '60ms' }}>
+      <div className="rise relative mt-2 overflow-hidden rounded-[24px] border border-white/10 shrink-0" style={{ background: 'linear-gradient(165deg,#1a1a21 0%,#0c0c10 70%)', boxShadow: '0 14px 36px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.12)', animationDelay: '60ms' }}>
         <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full" style={{ background: 'radial-gradient(circle,rgba(255,107,53,.22),transparent 70%)' }} />
-        <div className="relative flex gap-3 p-4 items-center">
+        <div className="relative flex gap-2.5 p-3 items-center">
           <img
             src={`./${artSrc(expr.src, mat)}`}
             alt="Foxit"
             onClick={() => setTipIdx((i) => (i === null ? 0 : i + 1))}
             style={heroFilter ? { filter: heroFilter } : undefined}
-            className="w-[92px] h-[92px] rounded-[24px] object-cover cursor-pointer border border-white/10 shrink-0 active:scale-[.97]"
+            className="w-[76px] h-[76px] rounded-[20px] object-cover cursor-pointer border border-white/10 shrink-0 active:scale-[.97]"
           />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-black tracking-[.22em] text-[#8b8b96]">TODAY</p>
-            <h2 className="text-[22px] font-semibold tracking-tight leading-tight truncate">
+            <h2 className="text-[20px] font-semibold tracking-tight leading-tight truncate">
               {username}<span className="text-[#FF6B35]">!</span>
             </h2>
-            <p className="text-[12.5px] text-[#cfcfd6] mt-0.5 leading-snug">
+            <p className="text-[12px] text-[#cfcfd6] mt-px leading-snug line-clamp-2">
               {tipIdx === null ? (
                 <>Pick a spot and hit <b className="text-[#FF6B35]">run!</b></>
               ) : (
@@ -1343,7 +1362,7 @@ export default function Dashboard() {
               )}
             </p>
           </div>
-          <div className="relative w-[68px] h-[68px] shrink-0" role="img" aria-label={`${Math.round(goalPct * 100)} percent of daily goal`}>
+          <div className="relative w-[60px] h-[60px] shrink-0" role="img" aria-label={`${Math.round(goalPct * 100)} percent of daily goal`}>
             <svg viewBox="0 0 44 44" className="w-full h-full -rotate-90">
               <defs>
                 <linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1">
@@ -1354,36 +1373,27 @@ export default function Dashboard() {
               <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="5" />
               <circle cx="22" cy="22" r="19" fill="none" stroke="url(#goalGrad)" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${goalPct * RING_C} ${RING_C}`} style={{ transition: 'stroke-dasharray .6s ease' }} />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[13px] font-black">{Math.round(goalPct * 100)}%</span>
+            <span className="absolute inset-0 flex items-center justify-center text-[12px] font-black">{Math.round(goalPct * 100)}%</span>
           </div>
         </div>
-        <div className="relative grid grid-cols-3 border-t border-white/5 divide-x divide-white/5">
-          {[
-            { k: 'distance', v: todayMeters >= 1000 ? `${(todayMeters / 1000).toFixed(1)}km` : `${todayMeters}m`, l: `of ${goal >= 1000 ? `${goal / 1000}km` : `${goal}m`} goal` },
-            { k: 'streak', v: `${week.streak}`, l: 'day streak' },
-            { k: 'runs', v: `${doneCount}/${count}`, l: 'runs done' },
-          ].map((s) => (
-            <div key={s.k} className="px-3 py-2.5 text-center">
-              <div className="text-[17px] font-black leading-none">{s.v}</div>
-              <div className="fox-hint text-[10px] font-bold mt-1">{s.l}</div>
-            </div>
-          ))}
+        <div className="relative px-3 pb-2.5 -mt-0.5">
+          <div className="flex justify-between text-[10.5px] font-extrabold">
+            <span className="fox-hint">{doneCount}/{count} runs · 🔥 {week.streak}</span>
+            <span>{todayMeters >= 1000 ? `${(todayMeters / 1000).toFixed(1)}km` : `${todayMeters}m`} <span className="text-[#888]">/ {goal >= 1000 ? `${goal / 1000}km` : `${goal}m`}</span></span>
+          </div>
+          <div className="h-1.5 rounded-full bg-black/70 overflow-hidden mt-1 border border-white/5">
+            <div className="h-full rounded-full" style={{ width: `${goalPct * 100}%`, background: 'linear-gradient(90deg,#2E7CF6,#FF6B35)', transition: 'width .6s ease' }} />
+          </div>
         </div>
       </div>
 
       {/* week */}
-      <div className="rise mt-3 rounded-[22px] border border-white/10 px-3 pt-2.5 pb-3" style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 12px 32px rgba(0,0,0,.45)', animationDelay: '120ms' }}>
-        <div className="flex items-center justify-between px-0.5">
-          <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">THIS WEEK</small>
-          <small className="text-[11px] font-extrabold tracking-wide">
-            {week.streak > 0 ? <span>🔥 <b className="text-[#FF6B35]">{week.streak}</b> day streak</span> : <span className="fox-hint">no streak yet</span>}
-          </small>
-        </div>
-        <div className="flex gap-[5px] mt-2">
+      <div className="rise mt-2 rounded-[20px] border border-white/10 px-2.5 pt-2 pb-2.5 shrink-0" style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 12px 32px rgba(0,0,0,.45)', animationDelay: '120ms' }}>
+        <div className="flex gap-[5px]">
           {week.days.map((d, i) => (
             <div
               key={i}
-              className={`flex-1 rounded-2xl py-[7px] px-0 pb-1.5 text-center border ${
+              className={`flex-1 rounded-xl py-[5px] px-0 pb-1 text-center border ${
                 d.today
                   ? 'border-[#2E7CF6]'
                   : d.hit
@@ -1406,7 +1416,7 @@ export default function Dashboard() {
       </div>
 
       {/* live map */}
-      <div className="rise mt-3 flex items-center justify-between px-0.5" style={{ animationDelay: '180ms' }}>
+      <div className="rise mt-2 flex items-center justify-between px-0.5 shrink-0" style={{ animationDelay: '180ms' }}>
         <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">LIVE MAP</small>
         {tracking ? (
           <span className="text-[10px] font-black tracking-[.14em] text-[#ff5b5b]">
@@ -1417,8 +1427,8 @@ export default function Dashboard() {
         )}
       </div>
       <div
-        className="rise relative mt-1.5 overflow-hidden rounded-[28px] border border-white/10"
-        style={{ height: 'clamp(260px,44dvh,430px)', boxShadow: '0 18px 50px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.10)', animationDelay: '220ms' }}
+        className="rise relative mt-1.5 overflow-hidden rounded-[24px] border border-white/10 min-h-0"
+        style={{ flex: '1 1 auto', minHeight: 200, boxShadow: '0 18px 50px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.10)', animationDelay: '220ms' }}
       >
         <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#2e2e30' }} />
 
@@ -1625,29 +1635,31 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* bottom nav */}
-      <div className="rise w-full grid grid-cols-2 gap-2 mt-3" style={{ animationDelay: '280ms' }}>
+      {/* native tab bar */}
+      <nav className="rise grid grid-cols-3 gap-2 pt-2 shrink-0" style={{ animationDelay: '280ms' }}>
+        <span className="rounded-2xl px-2 py-2 text-center border border-[#FF6B35]/60" style={{ background: 'rgba(255,107,53,.14)' }}>
+          <span className="block text-[19px] leading-none">🏠</span>
+          <span className="block text-[10px] font-black mt-1 text-[#FF6B35]">home</span>
+        </span>
         <Link
           id="workoutsBtn"
           to="/workouts"
-          className="fox-btn-primary min-w-0 rounded-[22px] px-3 py-3 no-underline"
-          style={{ boxShadow: '0 10px 28px rgba(255,107,53,.35)', textShadow: '0 1px 4px rgba(0,0,0,.4)' }}
+          className="rounded-2xl px-2 py-2 text-center border border-white/10 no-underline active:scale-[.97]"
+          style={{ background: 'rgba(255,255,255,.03)' }}
         >
-          <span className="block text-[22px] leading-none">💪</span>
-          <span className="block text-[16px] font-black mt-1">workouts →</span>
-          <span className="block text-[10px] font-bold opacity-80">11 groups · live check</span>
+          <span className="block text-[19px] leading-none">💪</span>
+          <span className="block text-[10px] font-black mt-1">workouts</span>
         </Link>
         <Link
           id="modelsBtn"
           to="/models"
-          className="min-w-0 rounded-[22px] border border-white/10 px-3 py-3 no-underline"
-          style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 10px 28px rgba(0,0,0,.45)' }}
+          className="rounded-2xl px-2 py-2 text-center border border-white/10 no-underline active:scale-[.97]"
+          style={{ background: 'rgba(255,255,255,.03)' }}
         >
-          <span className="block text-[22px] leading-none">🎙️</span>
-          <span className="block text-[16px] font-black mt-1">models →</span>
-          <span className="fox-hint block text-[10px] font-bold">voices & helpers</span>
+          <span className="block text-[19px] leading-none">🎙️</span>
+          <span className="block text-[10px] font-black mt-1">models</span>
         </Link>
-      </div>
+      </nav>
 
       {/* profile sheet */}
       {profileOpen && (
