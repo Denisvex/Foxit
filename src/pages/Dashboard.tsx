@@ -445,6 +445,10 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log, tracking]);
 
+  const doneCount = (log[todayKey]?.done ?? []).filter(Boolean).length;
+  const goalPct = Math.min(1, todayMeters / Math.max(1, goal));
+  const RING_C = 2 * Math.PI * 19;
+
   /* ------------------------- map primitives ------------------------- */
 
   const drawPath = useCallback(() => {
@@ -1284,13 +1288,19 @@ export default function Dashboard() {
         .sheet-up{animation:sheet-up .28s cubic-bezier(.2,.8,.3,1) both}
         @keyframes glow-pulse{0%,100%{opacity:.55}50%{opacity:1}}
         .live-dot{animation:glow-pulse 1.4s ease-in-out infinite}
+        @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+        .rise{animation:rise .5s cubic-bezier(.2,.8,.3,1) both}
+        body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+          background:radial-gradient(620px 320px at 50% -90px,rgba(255,107,53,.15),transparent 70%),
+          radial-gradient(520px 320px at 88% 112%,rgba(46,124,246,.12),transparent 70%)}
+        @media (prefers-reduced-motion: reduce){.rise,.sheet-up,.live-dot{animation:none}}
         .confetti-dot{position:fixed;width:10px;height:14px;border-radius:3px;z-index:1000;pointer-events:none}
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{scrollbar-width:none}
       `}</style>
 
       {/* topbar — sticky glass */}
-      <div className="sticky top-0 z-[600] -mx-4 px-4 pt-2 pb-2.5" style={{ backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', background: 'linear-gradient(rgba(10,10,15,.94),rgba(10,10,15,.72))', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+      <div className="rise sticky top-0 z-[600] -mx-4 px-4 pt-2 pb-2.5" style={{ backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', background: 'linear-gradient(rgba(10,10,15,.94),rgba(10,10,15,.72))', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
         <div className="flex items-center justify-between">
           <button id="profileBtn" onClick={() => setProfileOpen(true)} aria-label="edit profile" className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3.5 py-1 cursor-pointer" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
             <img src="./foxit-logo.png" alt="Foxit logo" className="w-[30px] h-[30px] rounded-full block" style={{ boxShadow: '0 0 0 2px #FF6B35' }} />
@@ -1310,53 +1320,59 @@ export default function Dashboard() {
       </div>
 
       {/* hero */}
-      <div className="relative mt-3 overflow-hidden rounded-[28px] border border-white/10" style={{ boxShadow: '0 18px 50px rgba(0,0,0,.55), 0 0 44px rgba(255,107,53,.12)' }}>
-        <img
-          src={`./${artSrc(expr.src, mat)}`}
-          alt="Foxit"
-          onClick={() => setTipIdx((i) => (i === null ? 0 : i + 1))}
-          style={heroFilter ? { filter: heroFilter, aspectRatio: '16/10' } : { aspectRatio: '16/10' }}
-          className="w-full block cursor-pointer object-cover"
-        />
-        <div className="absolute left-0 right-0 top-3 flex justify-center pointer-events-none">
-          <span className="text-[10px] font-black tracking-[.22em] bg-black/55 border border-white/15 rounded-full px-3 py-1" style={{ backdropFilter: 'blur(8px)' }}>
-            TODAY'S RUN
-          </span>
-        </div>
-        <div className="absolute left-0 right-0 bottom-0 px-4 pt-12 pb-3.5" style={{ background: 'linear-gradient(transparent,rgba(0,0,0,.92))' }}>
-          <h2 className="text-[24px] font-semibold tracking-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,.8)' }}>
-            Welcome, <span className="text-[#FF6B35]">{username}</span>!
-          </h2>
-          <p className="text-[13px] text-[#e6e6e6] mt-0.5" style={{ textShadow: '0 1px 8px rgba(0,0,0,.8)' }}>
-            {tipIdx === null ? (
-              <>
-                Pick a spot &amp; hit <b className="text-[#FF6B35]">run!</b> 🦊
-              </>
-            ) : (
-              <>
-                <b>{username}</b>, {TIPS[tipIdx % TIPS.length]}
-              </>
-            )}
-          </p>
-          <div className="mt-2.5 rounded-2xl bg-black/50 border border-white/10 px-3 py-2" style={{ backdropFilter: 'blur(8px)' }}>
-            <div className="flex justify-between text-[11px] font-extrabold">
-              <span className="text-[#ccc]">🎯 daily goal</span>
-              <span>
-                {todayMeters.toLocaleString()} <span className="text-[#888]">/ {goal.toLocaleString()} m</span>
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-black/70 overflow-hidden mt-1.5 border border-white/5">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${Math.min(100, (todayMeters / Math.max(1, goal)) * 100)}%`, background: 'linear-gradient(90deg,#2E7CF6,#FF6B35)', transition: 'width .6s ease' }}
-              />
-            </div>
+      <div className="rise relative mt-3 overflow-hidden rounded-[28px] border border-white/10" style={{ background: 'linear-gradient(165deg,#1a1a21 0%,#0c0c10 70%)', boxShadow: '0 18px 50px rgba(0,0,0,.55), 0 0 44px rgba(255,107,53,.12)', animationDelay: '60ms' }}>
+        <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full" style={{ background: 'radial-gradient(circle,rgba(255,107,53,.22),transparent 70%)' }} />
+        <div className="relative flex gap-3 p-4 items-center">
+          <img
+            src={`./${artSrc(expr.src, mat)}`}
+            alt="Foxit"
+            onClick={() => setTipIdx((i) => (i === null ? 0 : i + 1))}
+            style={heroFilter ? { filter: heroFilter } : undefined}
+            className="w-[92px] h-[92px] rounded-[24px] object-cover cursor-pointer border border-white/10 shrink-0 active:scale-[.97]"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-black tracking-[.22em] text-[#8b8b96]">TODAY</p>
+            <h2 className="text-[22px] font-semibold tracking-tight leading-tight truncate">
+              {username}<span className="text-[#FF6B35]">!</span>
+            </h2>
+            <p className="text-[12.5px] text-[#cfcfd6] mt-0.5 leading-snug">
+              {tipIdx === null ? (
+                <>Pick a spot and hit <b className="text-[#FF6B35]">run!</b></>
+              ) : (
+                <>{TIPS[tipIdx % TIPS.length]}</>
+              )}
+            </p>
           </div>
+          <div className="relative w-[68px] h-[68px] shrink-0" role="img" aria-label={`${Math.round(goalPct * 100)} percent of daily goal`}>
+            <svg viewBox="0 0 44 44" className="w-full h-full -rotate-90">
+              <defs>
+                <linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#2E7CF6" />
+                  <stop offset="100%" stopColor="#FF6B35" />
+                </linearGradient>
+              </defs>
+              <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="5" />
+              <circle cx="22" cy="22" r="19" fill="none" stroke="url(#goalGrad)" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${goalPct * RING_C} ${RING_C}`} style={{ transition: 'stroke-dasharray .6s ease' }} />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-[13px] font-black">{Math.round(goalPct * 100)}%</span>
+          </div>
+        </div>
+        <div className="relative grid grid-cols-3 border-t border-white/5 divide-x divide-white/5">
+          {[
+            { k: 'distance', v: todayMeters >= 1000 ? `${(todayMeters / 1000).toFixed(1)}km` : `${todayMeters}m`, l: `of ${goal >= 1000 ? `${goal / 1000}km` : `${goal}m`} goal` },
+            { k: 'streak', v: `${week.streak}`, l: 'day streak' },
+            { k: 'runs', v: `${doneCount}/${count}`, l: 'runs done' },
+          ].map((s) => (
+            <div key={s.k} className="px-3 py-2.5 text-center">
+              <div className="text-[17px] font-black leading-none">{s.v}</div>
+              <div className="fox-hint text-[10px] font-bold mt-1">{s.l}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* week */}
-      <div className="mt-3 rounded-[22px] border border-white/10 px-3 pt-2.5 pb-3" style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 12px 32px rgba(0,0,0,.45)' }}>
+      <div className="rise mt-3 rounded-[22px] border border-white/10 px-3 pt-2.5 pb-3" style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 12px 32px rgba(0,0,0,.45)', animationDelay: '120ms' }}>
         <div className="flex items-center justify-between px-0.5">
           <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">THIS WEEK</small>
           <small className="text-[11px] font-extrabold tracking-wide">
@@ -1390,7 +1406,7 @@ export default function Dashboard() {
       </div>
 
       {/* live map */}
-      <div className="mt-3 flex items-center justify-between px-0.5">
+      <div className="rise mt-3 flex items-center justify-between px-0.5" style={{ animationDelay: '180ms' }}>
         <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">LIVE MAP</small>
         {tracking ? (
           <span className="text-[10px] font-black tracking-[.14em] text-[#ff5b5b]">
@@ -1401,15 +1417,15 @@ export default function Dashboard() {
         )}
       </div>
       <div
-        className="relative mt-1.5 overflow-hidden rounded-[28px] border border-white/10"
-        style={{ height: 'clamp(260px,44dvh,430px)', boxShadow: '0 18px 50px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.10)' }}
+        className="rise relative mt-1.5 overflow-hidden rounded-[28px] border border-white/10"
+        style={{ height: 'clamp(260px,44dvh,430px)', boxShadow: '0 18px 50px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.10)', animationDelay: '220ms' }}
       >
         <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#2e2e30' }} />
 
         <div className="absolute left-2.5 right-2.5 top-2.5 z-[502] flex gap-1.5">
           <div
             onClick={() => gotoSpot(spot)}
-            className="flex-1 min-w-0 bg-[rgba(17,17,17,.92)] border border-[#333] rounded-full px-3 py-[7px] text-xs font-bold whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer"
+            className="flex-1 min-w-0 bg-[rgba(12,12,16,.72)] backdrop-blur-md border border-[#333] rounded-full px-3 py-[7px] text-xs font-bold whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer"
           >
             {renderSpotLine()}
           </div>
@@ -1417,7 +1433,7 @@ export default function Dashboard() {
             id="searchBtn"
             onClick={openSearch}
             aria-label="search places"
-            className="shrink-0 w-[38px] rounded-xl border-2 border-[#3a3a40] bg-[rgba(17,17,17,.92)] text-base cursor-pointer"
+            className="shrink-0 w-[38px] rounded-xl border-2 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-base cursor-pointer"
           >
             🔍
           </button>
@@ -1468,7 +1484,7 @@ export default function Dashboard() {
           id="mapToggle"
           onClick={() => setMapToolsVisible((v) => !v)}
           aria-label="show map buttons"
-          className={`absolute right-2.5 bottom-[54px] z-[501] w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(17,17,17,.92)] text-[17px] font-extrabold cursor-pointer ${
+          className={`absolute right-2.5 bottom-[54px] z-[501] w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer ${
             mapToolsVisible ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : ''
           }`}
         >
@@ -1490,7 +1506,7 @@ export default function Dashboard() {
               id="gpsBtn"
               onClick={() => locate(true)}
               aria-label="go to my location"
-              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(17,17,17,.92)] text-[17px] font-extrabold cursor-pointer"
+              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
               ◎
             </button>
@@ -1498,7 +1514,7 @@ export default function Dashboard() {
               id="zoomIn"
               onClick={() => mapRef.current?.zoomIn()}
               aria-label="zoom in"
-              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(17,17,17,.92)] text-[17px] font-extrabold cursor-pointer"
+              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
               +
             </button>
@@ -1506,7 +1522,7 @@ export default function Dashboard() {
               id="zoomOut"
               onClick={() => mapRef.current?.zoomOut()}
               aria-label="zoom out"
-              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(17,17,17,.92)] text-[17px] font-extrabold cursor-pointer"
+              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
               −
             </button>
@@ -1515,7 +1531,7 @@ export default function Dashboard() {
               onClick={toggleAdd}
               aria-label="add spot"
               className={`shrink-0 h-[38px] rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
-                adding ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(17,17,17,.92)]'
+                adding ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md'
               }`}
             >
               {adding ? 'tap map! ×' : '＋ spot'}
@@ -1525,7 +1541,7 @@ export default function Dashboard() {
               onClick={toggleStartArm}
               aria-label="set start point"
               className={`shrink-0 h-[38px] rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
-                startArmed ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(17,17,17,.92)]'
+                startArmed ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md'
               }`}
             >
               ▶ start
@@ -1574,7 +1590,7 @@ export default function Dashboard() {
                 key={id}
                 onClick={() => selectSpot(id, true)}
                 className={`shrink-0 border-2 border-b-4 rounded-2xl px-3 py-[7px] text-xs font-extrabold cursor-pointer ${
-                  id === spot ? 'bg-[#FF6B35] border-[#FF6B35] text-black' : 'bg-[rgba(17,17,17,.92)] border-[#3a3a40]'
+                  id === spot ? 'bg-[#FF6B35] border-[#FF6B35] text-black' : 'bg-[rgba(12,12,16,.72)] backdrop-blur-md border-[#3a3a40]'
                 }`}
               >
                 {s.n}. {s.name}
@@ -1610,7 +1626,7 @@ export default function Dashboard() {
       </div>
 
       {/* bottom nav */}
-      <div className="w-full grid grid-cols-2 gap-2 mt-3">
+      <div className="rise w-full grid grid-cols-2 gap-2 mt-3" style={{ animationDelay: '280ms' }}>
         <Link
           id="workoutsBtn"
           to="/workouts"
