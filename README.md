@@ -1,5 +1,5 @@
 # Foxit
-An app designed for workouts and daily runs so peple spends less time scrolling.
+An app designed for workouts and daily runs so people spends less time scrolling.
 
 ## Run it (React + TypeScript + Vite + Tailwind)
 
