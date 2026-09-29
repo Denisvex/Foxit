@@ -1277,6 +1277,7 @@ export default function Dashboard() {
       }
       return (
         <>
+          <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />
           🏃 <b>{dd}</b> · {Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}
           {left} · reach spot to finish 🏁
         </>
@@ -1428,20 +1429,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* live map */}
-      <div className="rise mt-2 flex items-center justify-between px-0.5 shrink-0" style={{ animationDelay: '180ms' }}>
-        <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">LIVE MAP</small>
-        {tracking ? (
-          <span className="text-[10px] font-black tracking-[.14em] text-[#ff5b5b]">
-            <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />TRACKING
-          </span>
-        ) : (
-          <small className="fox-hint text-[10px] font-bold">pick a pin, hit run!</small>
-        )}
-      </div>
+      {/* live map: full-bleed, part of the app, no frame */}
       <div
-        className="rise relative mt-1.5 overflow-hidden rounded-[24px] border border-white/10 min-h-0"
-        style={{ flex: '1 1 auto', minHeight: 200, boxShadow: '0 18px 50px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.10)', animationDelay: '220ms' }}
+        className="rise relative -mx-4 mt-2 flex-1 min-h-0 border-y border-white/5"
+        style={{ animationDelay: '220ms' }}
       >
         <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#2e2e30' }} />
 
