@@ -1,10 +1,10 @@
 # Foxit
-An app designed for workouts and daily runs so people spends less time scrolling.
+An app designed for workouts and daily runs so user spends less time scrolling.
+React + TypeScript + Vite + Tailwind.
 
-## Run it (React + TypeScript + Vite + Tailwind)
+## Run it
 
 ```bash
-cd foxit-app
 npm install
 npm run dev      # http://localhost:8000
 ```
@@ -12,8 +12,7 @@ npm run dev      # http://localhost:8000
 ## Build a static copy
 
 ```bash
-cd foxit-app
-npm run build    # outputs foxit-app/dist/
+npm run build    # outputs dist/
 npm run preview  # serve the build on :8000
 ```
 
