@@ -109,6 +109,40 @@ button {
   pointer-events: none;
 }
 
+/* app shell for tabbed screens: fixed viewport height, scrollable content, tab bar pinned */
+.fox-app {
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fox-in 0.35s ease both;
+}
+
+.fox-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* native press feedback on every enabled button */
+#root button:not(:disabled) {
+  transition: transform 0.15s ease;
+}
+#root button:not(:disabled):active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  #root button:not(:disabled) {
+    transition: none;
+  }
+  #root button:not(:disabled):active {
+    transform: none;
+  }
+}
+
 /* tiny helper-1.0 explanation chips */
 .helper-hint {
   position: absolute;

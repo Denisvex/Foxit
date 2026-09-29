@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import TabBar from '../components/TabBar';
 import { KEYS, saveStr } from '../lib/store';
 import { VOICE_MODELS, activeVoiceModel, modelById, speakText, stopVoice } from '../lib/voice';
 import type { VoiceModelId } from '../lib/voice';
@@ -121,7 +122,8 @@ export default function Models() {
   };
 
   return (
-    <div className="fox-stage">
+    <div className="fox-app">
+      <div className="fox-scroll">
       <div className="mb-2 flex items-center justify-between">
         <Link to="/dashboard" className="text-[13px] font-extrabold text-[#999]">
           ← dashboard
@@ -246,6 +248,8 @@ export default function Models() {
         <b>Private by design:</b> models run 100% on-device, zero data sent anywhere.
       </div>
 
+      </div>
+      <TabBar />
       {toastEl}
     </div>
   );

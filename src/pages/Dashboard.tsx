@@ -2,6 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import {
+  Crosshair,
+  DotsThree,
+  Flame,
+  Gear,
+  MagnifyingGlass,
+  MapPin,
+  Minus,
+  Play,
+  Plus,
+  X,
+} from '@phosphor-icons/react';
+import TabBar from '../components/TabBar';
 import { KEYS, load, loadStr, save, saveStr } from '../lib/store';
 import { useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
@@ -1328,11 +1341,11 @@ export default function Dashboard() {
             </b>
           </button>
           <div className="flex items-center gap-1.5">
-            <span className="bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-extrabold" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
-              🔥 <b className="text-[#FF6B35]">{week.streak}</b>
+            <span className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+              <Flame size={14} weight="fill" className="text-[#FF6B35]" /> <b className="text-[#FF6B35]">{week.streak}</b>
             </span>
-            <button id="settingsBtn" onClick={openSettings} aria-label="settings" className="bg-white/5 border border-white/10 rounded-full w-[34px] h-[34px] text-sm font-extrabold cursor-pointer" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
-              ⚙
+            <button id="settingsBtn" onClick={openSettings} aria-label="settings" className="flex bg-white/5 border border-white/10 rounded-full w-[34px] h-[34px] text-sm font-extrabold cursor-pointer items-center justify-center" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+              <Gear size={16} weight="bold" />
             </button>
           </div>
         </div>
@@ -1373,11 +1386,11 @@ export default function Dashboard() {
               <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="5" />
               <circle cx="22" cy="22" r="19" fill="none" stroke="url(#goalGrad)" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${goalPct * RING_C} ${RING_C}`} style={{ transition: 'stroke-dasharray .6s ease' }} />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[12px] font-black">{Math.round(goalPct * 100)}%</span>
+            <span className="absolute inset-0 flex items-center justify-center text-[12px] font-black tabular-nums">{Math.round(goalPct * 100)}%</span>
           </div>
         </div>
         <div className="relative px-3 pb-2.5 -mt-0.5">
-          <div className="flex justify-between text-[10.5px] font-extrabold">
+          <div className="flex justify-between text-[10.5px] font-extrabold tabular-nums">
             <span className="fox-hint">{doneCount}/{count} runs · 🔥 {week.streak}</span>
             <span>{todayMeters >= 1000 ? `${(todayMeters / 1000).toFixed(1)}km` : `${todayMeters}m`} <span className="text-[#888]">/ {goal >= 1000 ? `${goal / 1000}km` : `${goal}m`}</span></span>
           </div>
@@ -1443,9 +1456,9 @@ export default function Dashboard() {
             id="searchBtn"
             onClick={openSearch}
             aria-label="search places"
-            className="shrink-0 w-[38px] rounded-xl border-2 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-base cursor-pointer"
+            className="flex shrink-0 w-[38px] items-center justify-center rounded-xl border-2 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-base cursor-pointer"
           >
-            🔍
+            <MagnifyingGlass size={18} weight="bold" />
           </button>
         </div>
 
@@ -1464,9 +1477,9 @@ export default function Dashboard() {
                 id="searchClose"
                 onClick={closeSearch}
                 aria-label="close search"
-                className="shrink-0 w-11 rounded-xl border-2 border-[#3a3a40] bg-[#222] text-lg font-extrabold cursor-pointer"
+                className="flex shrink-0 w-11 items-center justify-center rounded-xl border-2 border-[#3a3a40] bg-[#222] text-lg font-extrabold cursor-pointer"
               >
-                ×
+                <X size={18} weight="bold" />
               </button>
             </div>
             <div>
@@ -1494,11 +1507,11 @@ export default function Dashboard() {
           id="mapToggle"
           onClick={() => setMapToolsVisible((v) => !v)}
           aria-label="show map buttons"
-          className={`absolute right-2.5 bottom-[54px] z-[501] w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer ${
+          className={`absolute right-2.5 bottom-[54px] z-[501] w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer flex items-center justify-center ${
             mapToolsVisible ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : ''
           }`}
         >
-          {mapToolsVisible ? '×' : '⋯'}
+          {mapToolsVisible ? <X size={17} weight="bold" /> : <DotsThree size={20} weight="bold" />}
         </button>
 
         <button
@@ -1507,7 +1520,7 @@ export default function Dashboard() {
           aria-label="show spots"
           className="fox-btn-orange absolute left-2.5 bottom-2 z-[501] w-[38px] h-[38px] rounded-[13px] text-[17px] flex items-center justify-center cursor-pointer"
         >
-          📍
+          <MapPin size={18} weight="fill" />
         </button>
 
         {mapToolsVisible && (
@@ -1516,45 +1529,45 @@ export default function Dashboard() {
               id="gpsBtn"
               onClick={() => locate(true)}
               aria-label="go to my location"
-              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
+              className="flex shrink-0 w-[38px] h-[38px] items-center justify-center rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
-              ◎
+              <Crosshair size={18} weight="bold" />
             </button>
             <button
               id="zoomIn"
               onClick={() => mapRef.current?.zoomIn()}
               aria-label="zoom in"
-              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
+              className="flex shrink-0 w-[38px] h-[38px] items-center justify-center rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
-              +
+              <Plus size={17} weight="bold" />
             </button>
             <button
               id="zoomOut"
               onClick={() => mapRef.current?.zoomOut()}
               aria-label="zoom out"
-              className="shrink-0 w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
+              className="flex shrink-0 w-[38px] h-[38px] items-center justify-center rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
-              −
+              <Minus size={17} weight="bold" />
             </button>
             <button
               id="addBtn"
               onClick={toggleAdd}
               aria-label="add spot"
-              className={`shrink-0 h-[38px] rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
+              className={`flex shrink-0 h-[38px] items-center gap-1 rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
                 adding ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md'
               }`}
             >
-              {adding ? 'tap map! ×' : '＋ spot'}
+              {adding ? 'tap map!' : <><Plus size={15} weight="bold" /> spot</>}
             </button>
             <button
               id="startPointBtn"
               onClick={toggleStartArm}
               aria-label="set start point"
-              className={`shrink-0 h-[38px] rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
+              className={`flex shrink-0 h-[38px] items-center gap-1 rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
                 startArmed ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md'
               }`}
             >
-              ▶ start
+              <Play size={14} weight="fill" /> start
             </button>
           </div>
         )}
@@ -1636,30 +1649,9 @@ export default function Dashboard() {
       </div>
 
       {/* native tab bar */}
-      <nav className="rise grid grid-cols-3 gap-2 pt-2 shrink-0" style={{ animationDelay: '280ms' }}>
-        <span className="rounded-2xl px-2 py-2 text-center border border-[#FF6B35]/60" style={{ background: 'rgba(255,107,53,.14)' }}>
-          <span className="block text-[19px] leading-none">🏠</span>
-          <span className="block text-[10px] font-black mt-1 text-[#FF6B35]">home</span>
-        </span>
-        <Link
-          id="workoutsBtn"
-          to="/workouts"
-          className="rounded-2xl px-2 py-2 text-center border border-white/10 no-underline active:scale-[.97]"
-          style={{ background: 'rgba(255,255,255,.03)' }}
-        >
-          <span className="block text-[19px] leading-none">💪</span>
-          <span className="block text-[10px] font-black mt-1">workouts</span>
-        </Link>
-        <Link
-          id="modelsBtn"
-          to="/models"
-          className="rounded-2xl px-2 py-2 text-center border border-white/10 no-underline active:scale-[.97]"
-          style={{ background: 'rgba(255,255,255,.03)' }}
-        >
-          <span className="block text-[19px] leading-none">🎙️</span>
-          <span className="block text-[10px] font-black mt-1">models</span>
-        </Link>
-      </nav>
+      <div className="rise shrink-0" style={{ animationDelay: '280ms' }}>
+        <TabBar />
+      </div>
 
       {/* profile sheet */}
       {profileOpen && (

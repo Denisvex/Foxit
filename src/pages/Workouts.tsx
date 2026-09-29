@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import TabBar from '../components/TabBar';
 import { KEYS, doneKey, loadStr } from '../lib/store';
 import { useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
@@ -150,7 +151,8 @@ export default function Workouts() {
   const showNoHit = query.trim() !== '' && filtered.length === 0;
 
   return (
-    <div className="fox-stage">
+    <div className="fox-app">
+      <div className="fox-scroll">
       <div className="mx-auto w-full max-w-[380px] text-center">
         <div className="mb-2.5 flex items-center justify-between">
           <Link to="/dashboard" className="text-[13px] font-extrabold text-[#999] no-underline">
@@ -297,6 +299,8 @@ export default function Workouts() {
           </button>
         </div>
       </div>
+      </div>
+      <TabBar />
       {toastEl}
     </div>
   );

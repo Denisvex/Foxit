@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import TabBar from '../components/TabBar';
 import { doneKey, saveStr } from '../lib/store';
 import { stopVoice, useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
@@ -563,7 +564,8 @@ export default function Verify() {
   };
 
   return (
-    <div className="fox-stage">
+    <div className="fox-app">
+      <div className="fox-scroll">
       <div className="mx-auto w-full max-w-[400px] text-center">
         <div className="mb-2.5 flex items-center justify-between">
           <Link to="/workouts" className="text-[13px] font-extrabold text-[#999] no-underline">
@@ -708,6 +710,8 @@ export default function Verify() {
           runs 100% on-device, zero footage saved or sent anywhere.
         </div>
       </div>
+      </div>
+      <TabBar />
     </div>
   );
 }
