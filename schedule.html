@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>foxit — run times</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; background:#000; }
+  body { background:linear-gradient(180deg,#2a2a33 0%,#1e1e25 28%,#141419 58%,#0c0c10 82%,#08080a 100%); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:18px 0; }
+  .stage { text-align:center; width:min(92vw,380px); animation:in .7s ease-out both; }
+  @keyframes in { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
+  .bubble { background:#111; border:1px solid #222; border-radius:16px; padding:12px 14px; margin-bottom:12px; font-size:14px; }
+  .bubble b { color:#FF6B35; }
+
+  .fox-wrap { width:min(52vw,160px); aspect-ratio:1/1; margin:0 auto; }
+  .fox { width:100%; height:100%; object-fit:contain; display:block; filter:drop-shadow(0 8px 32px rgba(255,107,53,.35)); }
+  h1 { font-size:22px; margin-top:10px; letter-spacing:-.02em; line-height:1.25; }
+  p.sub { color:#999; margin-top:5px; font-size:13px; }
+  .count-row { margin-top:10px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:#999; }
+  .stepper { display:flex; align-items:center; gap:7px; background:#111; border:1px solid #222; border-radius:999px; padding:3px 5px; }
+  .stepper button { width:26px; height:26px; border-radius:50%; border:none; background:#222; color:#fff; font-size:15px; font-weight:800; cursor:pointer; }
+  .stepper button:active { background:#FF6B35; color:#000; }
+  .stepper b { font-size:14px; color:#fff; min-width:16px; }
+  .alarm { margin-top:11px; background:#111; border:1px solid #222; border-radius:18px; padding:13px 13px; display:flex; align-items:center; gap:10px; text-align:left; }
+  .alarm.active { border-color:#FF6B35; box-shadow:0 8px 32px rgba(255,107,53,.2); }
+  .alarm-info { flex:1; min-width:0; }
+  .alarm-title { font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#FF6B35; }
+  .time-row { margin-top:7px; display:flex; align-items:center; gap:6px; }
+  .time-row input {
+    background:#0a0a0a; border:1px solid #222; color:#fff;
+    font-size:24px; font-weight:800; letter-spacing:-.02em;
+    border-radius:11px; padding:7px 5px; text-align:center;
+    width:68px;
+  }
+  .time-row input:focus { border-color:#FF6B35; outline:none; }
+  .time-row input::-webkit-outer-spin-button, .time-row input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .time-row input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+  .colon { font-size:24px; font-weight:800; color:#666; }
+  .ampm-col { display:flex; flex-direction:row; gap:6px; margin-left:4px; }
+  .ampm-col button { background:#0a0a0a; border:1px solid #222; color:#999; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:800; cursor:pointer; }
+  .ampm-col button.on { background:#FF6B35; border-color:#FF6B35; color:#000; }
+  .start-wrap { margin-top:18px; display:flex; justify-content:center; }
+  .start-btn { width:270px; height:60px; border-radius:999px; border:none; background:#FF6B35; color:#000; font-size:18px; font-weight:800; letter-spacing:.02em; cursor:pointer; box-shadow:0 8px 32px rgba(255,107,53,.4); display:flex; align-items:center; justify-content:center; gap:10px; }
+  .start-btn:active { transform:scale(.95); }
+  .back { display:block; margin-top:12px; color:#666; font-size:13px; text-decoration:none; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="bubble" id="bubble">Type your run times — <b>hour : minutes</b> + A.M / P.M 🦊</div>
+
+    <div class="fox-wrap"><img class="fox" src="foxit-alarmtime.png" alt="Foxit with alarm" /></div>
+    <h1>What time<br/>are your runs?</h1>
+    <p class="sub" id="sub">Type the time for each run</p>
+
+    <div class="count-row">
+      <span>runs per day</span>
+      <div class="stepper">
+        <button id="minus">−</button><b id="countLabel">2</b><button id="plus">+</button>
+      </div>
+    </div>
+
+    <div id="alarms"></div>
+
+    <div class="start-wrap">
+      <button class="start-btn" id="continue">continue <span aria-hidden="true">→</span></button>
+    </div>
+    <a class="back" href="frequency.html">← back</a>
+  </div>
+
+<script>
+  const alarmsEl = document.getElementById('alarms');
+  const bubble = document.getElementById('bubble');
+  const countLabel = document.getElementById('countLabel');
+
+  const NAMES = {1:['Your run'],2:['Morning run','Afternoon run'],3:['Morning run','Midday run','Evening run']};
+  const DEFAULTS = {
+    1: [{h:8,m:0,ampm:'AM'}],
+    2: [{h:7,m:0,ampm:'AM'},{h:5,m:0,ampm:'PM'}],
+    3: [{h:7,m:0,ampm:'AM'},{h:12,m:0,ampm:'PM'},{h:6,m:0,ampm:'PM'}]
+  };
+
+  let count = 2;
+  try { const s=parseInt(localStorage.getItem('foxit_runs_per_day'),10); if(s>=1&&s<=3) count=s; } catch(e){}
+  let runs = load() || JSON.parse(JSON.stringify(DEFAULTS[count]));
+
+  function load(){
+    try{
+      const raw=localStorage.getItem('foxit_run_times')||localStorage.getItem('foxit_walk_times');
+      if(!raw) return null;
+      const a=JSON.parse(raw);
+      if(!Array.isArray(a)||!a.length) return null;
+      return a.slice(0,3).map(w=>({h:w.h,m:w.m,ampm:w.ampm}));
+    }catch(e){return null;}
+  }
+  function save(){
+    try{localStorage.setItem('foxit_run_times',JSON.stringify(runs));}catch(e){}
+    try{localStorage.setItem('foxit_runs_per_day',String(count));}catch(e){}
+  }
+  function fmt(w){ return `${String(w.h).padStart(2,'0')}:${String(w.m).padStart(2,'0')}`; }
+
+  function syncCount(){
+    while(runs.length<count) runs.push({...((DEFAULTS[count][runs.length])||{h:8,m:0,ampm:'AM'})});
+    runs=runs.slice(0,count);
+    save();
+  }
+
+  function clampH(v){ v=parseInt(v,10); if(isNaN(v)) return null; if(v<1) return 1; if(v>12) return 12; return v; }
+  function clampM(v){ v=parseInt(v,10); if(isNaN(v)) return null; if(v<0) return 0; if(v>59) return 59; return v; }
+
+  function render(){
+    countLabel.textContent=count;
+    const ns=NAMES[count];
+    alarmsEl.innerHTML='';
+    runs.forEach((w,i)=>{
+      const d=document.createElement('div');
+      d.className='alarm'+(i===0?' active':'');
+      d.innerHTML=`
+        <div class="alarm-info">
+          <div class="alarm-title">${ns[i]}</div>
+          <div class="time-row">
+            <input data-k="h" aria-label="hour" inputmode="numeric" maxlength="2" placeholder="07" value="${String(w.h).padStart(2,'0')}" />
+            <span class="colon">:</span>
+            <input data-k="m" aria-label="minutes" inputmode="numeric" maxlength="2" placeholder="00" value="${String(w.m).padStart(2,'0')}" />
+            <div class="ampm-col">
+              <button data-a="AM" class="${w.ampm==='AM'?'on':''}">A.M.</button>
+              <button data-a="PM" class="${w.ampm==='PM'?'on':''}">P.M.</button>
+            </div>
+          </div>
+        </div>`;
+      d.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change',()=>{
+          const k=inp.dataset.k;
+          const v = k==='h' ? clampH(inp.value) : clampM(inp.value);
+          if(v===null){ inp.value=String(k==='h'?w.h:w.m).padStart(2,'0'); return; }
+          w[k]=v;
+          inp.value=String(v).padStart(2,'0');
+          save();
+          bubble.innerHTML=`<b>${ns[i]}</b> → <b>${fmt(w)} ${w.ampm}</b> ✓`;
+          d.classList.add('active');
+        });
+        inp.addEventListener('focus',()=>inp.select());
+      });
+      d.querySelectorAll('.ampm-col button').forEach(b=>{
+        b.addEventListener('click',()=>{
+          w.ampm=b.dataset.a;
+          save();
+          render();
+          bubble.innerHTML=`<b>${ns[i]}</b> → <b>${fmt(w)} ${w.ampm}</b> ✓`;
+        });
+      });
+      alarmsEl.appendChild(d);
+    });
+  }
+
+  document.getElementById('minus').addEventListener('click',()=>{ if(count>1){count--;syncCount();render();} });
+  document.getElementById('plus').addEventListener('click',()=>{ if(count<3){count++;syncCount();render();} });
+  document.getElementById('continue').addEventListener('click',()=>{
+    save();
+    bubble.innerHTML=`Locked: <b>${runs.map(w=>fmt(w)+' '+w.ampm).join(' · ')}</b> — let's run!`;
+    setTimeout(()=>location.href='username.html',600);
+  });
+
+  syncCount();
+  render();
+</script>
+
+
+<script>
+(function(){
+  var b=document.querySelector('#bubble,.bubble');
+  if(!b||!('speechSynthesis' in window)) return;
+  var M={speaker1:{pitch:0.85,rate:1.0,male:true},
+         simple:  {pitch:1.1, rate:0.7,male:true},
+         classic: {pitch:1.0, rate:1.0,male:false}};
+  var id='speaker1';
+  try{ id=localStorage.getItem('foxit_voice_model')||'speaker1'; }catch(e){}
+  // Foxit only greets on his own model: speaker 1.0 must be active
+  if(id!=='speaker1') return;
+  var m=M[id]||M.speaker1;
+  function voice(){
+    var vs=speechSynthesis.getVoices();
+    var en=vs.filter(function(v){return /^en/i.test(v.lang);});
+    if(!en.length) return vs[0]||null;
+    if(m.male) return en.find(function(v){return /male|david|daniel|alex|fred/i.test(v.name);})||en[0];
+    return en[0];
+  }
+  try{ speechSynthesis.getVoices(); }catch(e){}
+  function say(){
+    try{
+      if(speechSynthesis.speaking) speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(b.textContent.trim());
+      var v=voice(); if(v) u.voice=v;
+      u.pitch=m.pitch; u.rate=m.rate;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  var done=false;
+  function auto(){ if(done) return; done=true; setTimeout(say,400); }
+  try{
+    if('onvoiceschanged' in speechSynthesis) speechSynthesis.onvoiceschanged=auto;
+    setTimeout(auto,1500);
+  }catch(e){}
+  addEventListener('pagehide',function(){ try{ speechSynthesis.cancel(); }catch(e){} });
+})();
+</script>
+<style id="helperStyle">
+  .helper-hint { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:3px;
+    font-size:9px; font-weight:800; letter-spacing:.03em; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:#c9c9d4; background:rgba(8,8,10,.94); border:1px solid #33343c; border-radius:8px;
+    padding:2px 6px; white-space:nowrap; pointer-events:none; z-index:700; line-height:1.35; text-transform:lowercase; }
+</style>
+
+<script id="helperPatch">
+(function(){
+  var H={ runBtn:'start a run', workoutsBtn:'open workouts', modelsBtn:'open models & voices',
+    spotsBtn:'show your spots', mapToggle:'map controls', gpsBtn:'jump to my location',
+    zoomIn:'zoom in', zoomOut:'zoom out', addBtn:'save a new spot', startPointBtn:'set run start',
+    searchBtn:'search places', searchClose:'close search', spotCancel:'cancel', spotSave:'save spot',
+    profileClose:'close profile', settingsBtn:'open settings',
+    settingsClose:'close settings', nameSave:'save name', setNameSave:'save name', goalSave:'save goal',
+    menuBtn:'open menu', startBtn:'begin live check', stopBtn:'end session', repMinus:'fewer reps',
+    repPlus:'more reps', customGo:'start custom workout', noHitGo:'train it anyway',
+    goBtn:'start workout', minus:'one less', plus:'one more', continue:'continue to next step',
+    spkPlay:'play the voice', spkStop:'stop the voice' };
+  function active(){ try{ return (localStorage.getItem('foxit_voice_model')||'')==='helper1'; }catch(e){ return false; } }
+  function hintFor(b){
+    if(b.dataset && b.dataset.hint) return b.dataset.hint;
+    if(b.id && H[b.id]) return H[b.id];
+    if(b.classList && b.classList.contains('card') && b.dataset.p) return 'train '+b.dataset.p;
+    if(b.dataset && b.dataset.v) return 'set to '+b.dataset.v;
+    if(b.dataset && b.dataset.src) return 'open this page';
+    if(b.tagName==='A'){
+      var h=(b.getAttribute('href')||'').replace('.html','');
+      if(h==='dashboard') return 'back to dashboard';
+      if(h==='workouts') return 'back to workouts';
+      if(h==='models') return 'back to models';
+      if(b.classList.contains('back')) return 'go back a step';
+      if(h && h!=='#') return 'go to '+h;
+      return '';
+    }
+    var t=(b.textContent||'').trim().toLowerCase();
+    if(t==='continue') return 'continue to next step';
+    if(t.indexOf('train it anyway')===0) return 'train it your way';
+    return '';
+  }
+  function clear(){
+    var old=document.querySelectorAll('.helper-hint');
+    for(var i=0;i<old.length;i++) old[i].parentNode.removeChild(old[i]);
+  }
+  window.applyHelperHints=function(){
+    clear();
+    if(!active()) return;
+    var els=document.querySelectorAll('button, a[href]');
+    for(var i=0;i<els.length;i++){
+      (function(b){
+        if(b.querySelector('.helper-hint')) return;
+        var h=hintFor(b); if(!h) return;
+        var s=document.createElement('small');
+        s.className='helper-hint'; s.textContent=h;
+        var cs=getComputedStyle(b);
+        if(cs.position==='static') b.style.position='relative';
+        b.appendChild(s);
+        var r=b.getBoundingClientRect();
+        if(r.bottom>window.innerHeight-26){ s.style.top='auto'; s.style.bottom='100%'; s.style.marginTop='0'; s.style.marginBottom='3px'; }
+        if(r.left<64){ s.style.left='0'; s.style.transform='none'; }
+        if(r.right>window.innerWidth-64){ s.style.left='auto'; s.style.right='0'; s.style.transform='none'; }
+      })(els[i]);
+    }
+  };
+  function boot(){ try{ window.applyHelperHints(); }catch(e){} }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style id="softFont">
+  body { font-family:'Fredoka','Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif !important;
+    color:#fff !important;
+    text-shadow:none !important; }
+  * { color:#fff !important; text-shadow:none !important; }
+  h1, h2, .topbar b, .brand, .brand b, .hero-text h2, #done b, .m-head .t b, .model .t b {
+    font-family:'Fredoka','Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-weight:600 !important;
+    color:#fff !important;
+    text-shadow:none !important; }
+  h1 span, h2 span, .topbar b span, .brand b span, .hero-text h2 span { color:#fff !important; }
+  input::placeholder, textarea::placeholder { color:#6b6b75 !important; text-shadow:none !important; }
+  .custom-hint, #noHit, .search-hint, .note, .desc, .privacy, .soon, .map-fallback,
+  #idle p, .sub, .helper-hint, .chat-hint, .hint, .field small, .fld-note, .sheet-note {
+    color:#8b8b96 !important; text-shadow:none !important; }
+  /* dark type stays dark on bright buttons/tiles — white on orange is unreadable */
+  .start-btn, #spotsBtn, #goalSave, #setNameSave, #nameSave, .toast, .sheet-close, .btn-primary,
+  .chip.on, .chip.on .x, .chip:active, .mini-chip.on, .map-toggle.on, .map-btns button.armed,
+  .map-btns button:active, .screen-tabs button.on, .spot-form .row button.save,
+  .stepper button:active, .day.hit b, .day.today b, .fp-pin.sel, .checks li i,
+  .ampm-col button.on {
+    color:#000 !important; }
+</style>
+</body>
+</html>
