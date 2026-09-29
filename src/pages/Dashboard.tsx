@@ -434,6 +434,17 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log]);
 
+  /* Today's tracked meters → goal progress ring in the hero */
+  const todayMeters = useMemo(() => {
+    try {
+      const tracks = load<Track[]>('foxit_tracks', []);
+      return tracks.filter((t) => t.d === todayKey).reduce((a, t) => a + (t.meters || 0), 0);
+    } catch {
+      return 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [log, tracking]);
+
   /* ------------------------- map primitives ------------------------- */
 
   const drawPath = useCallback(() => {
@@ -1253,7 +1264,7 @@ export default function Dashboard() {
   /* ------------------------- render ------------------------- */
 
   return (
-    <div className="fox-stage" style={{ maxWidth: 380, width: '92vw' }}>
+    <div className="fox-stage" style={{ maxWidth: 430, width: '94vw' }}>
       <style>{`
         .leaflet-container{background:#2e2e30;font:inherit}
         .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.5) contrast(.85)}
@@ -1269,43 +1280,54 @@ export default function Dashboard() {
         @keyframes dash-march{to{stroke-dashoffset:-28}}
         @keyframes pin-pulse{0%{box-shadow:0 0 0 0 rgba(255,107,53,.55)}100%{box-shadow:0 0 0 16px rgba(255,107,53,0)}}
         @keyframes fox-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes sheet-up{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
+        .sheet-up{animation:sheet-up .28s cubic-bezier(.2,.8,.3,1) both}
+        @keyframes glow-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+        .live-dot{animation:glow-pulse 1.4s ease-in-out infinite}
         .confetti-dot{position:fixed;width:10px;height:14px;border-radius:3px;z-index:1000;pointer-events:none}
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{scrollbar-width:none}
       `}</style>
 
-      {/* topbar */}
-      <div className="flex items-center justify-between">
-        <button id="profileBtn" onClick={() => setProfileOpen(true)} aria-label="edit profile" className="flex items-center gap-2 bg-transparent border-0 cursor-pointer p-0">
-          <img src="./foxit-logo.png" alt="Foxit logo" className="w-[34px] h-[34px] rounded-[9px] block" />
-          <b className="text-[17px] tracking-tight">
-            fox<span className="text-[#FF6B35]">it</span>
-          </b>
-        </button>
-        <div className="flex items-center gap-1.5">
-          <span className="bg-[#111] border border-[#222] rounded-full px-3 py-1.5 text-xs font-extrabold">
-            🔥 <b className="text-[#FF6B35]">{week.streak}</b>
-          </span>
-          <button id="settingsBtn" onClick={openSettings} aria-label="settings" className="bg-[#111] border border-[#222] rounded-full px-3 py-1.5 text-xs font-extrabold cursor-pointer">
-            ⚙
+      {/* topbar — sticky glass */}
+      <div className="sticky top-0 z-[600] -mx-4 px-4 pt-2 pb-2.5" style={{ backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', background: 'linear-gradient(rgba(10,10,15,.94),rgba(10,10,15,.72))', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+        <div className="flex items-center justify-between">
+          <button id="profileBtn" onClick={() => setProfileOpen(true)} aria-label="edit profile" className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3.5 py-1 cursor-pointer" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+            <img src="./foxit-logo.png" alt="Foxit logo" className="w-[30px] h-[30px] rounded-full block" style={{ boxShadow: '0 0 0 2px #FF6B35' }} />
+            <b className="text-[16px] tracking-tight">
+              fox<span className="text-[#FF6B35]">it</span>
+            </b>
           </button>
+          <div className="flex items-center gap-1.5">
+            <span className="bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-extrabold" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+              🔥 <b className="text-[#FF6B35]">{week.streak}</b>
+            </span>
+            <button id="settingsBtn" onClick={openSettings} aria-label="settings" className="bg-white/5 border border-white/10 rounded-full w-[34px] h-[34px] text-sm font-extrabold cursor-pointer" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+              ⚙
+            </button>
+          </div>
         </div>
       </div>
 
       {/* hero */}
-      <div className="bg-black border-2 border-b-[5px] border-[#2a2a2e] rounded-[22px] overflow-hidden relative text-left mt-2">
+      <div className="relative mt-3 overflow-hidden rounded-[28px] border border-white/10" style={{ boxShadow: '0 18px 50px rgba(0,0,0,.55), 0 0 44px rgba(255,107,53,.12)' }}>
         <img
           src={`./${artSrc(expr.src, mat)}`}
           alt="Foxit"
           onClick={() => setTipIdx((i) => (i === null ? 0 : i + 1))}
-          style={heroFilter ? { filter: heroFilter } : undefined}
+          style={heroFilter ? { filter: heroFilter, aspectRatio: '16/10' } : { aspectRatio: '16/10' }}
           className="w-full block cursor-pointer object-cover"
         />
-        <div className="absolute left-0 right-0 bottom-0 px-3.5 pt-[30px] pb-3" style={{ background: 'linear-gradient(transparent,rgba(0,0,0,.88))' }}>
-          <h2 className="text-[21px] font-semibold tracking-tight">
+        <div className="absolute left-0 right-0 top-3 flex justify-center pointer-events-none">
+          <span className="text-[10px] font-black tracking-[.22em] bg-black/55 border border-white/15 rounded-full px-3 py-1" style={{ backdropFilter: 'blur(8px)' }}>
+            TODAY'S RUN
+          </span>
+        </div>
+        <div className="absolute left-0 right-0 bottom-0 px-4 pt-12 pb-3.5" style={{ background: 'linear-gradient(transparent,rgba(0,0,0,.92))' }}>
+          <h2 className="text-[24px] font-semibold tracking-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,.8)' }}>
             Welcome, <span className="text-[#FF6B35]">{username}</span>!
           </h2>
-          <p className="text-[13px] text-[#ddd] mt-0.5">
+          <p className="text-[13px] text-[#e6e6e6] mt-0.5" style={{ textShadow: '0 1px 8px rgba(0,0,0,.8)' }}>
             {tipIdx === null ? (
               <>
                 Pick a spot &amp; hit <b className="text-[#FF6B35]">run!</b> 🦊
@@ -1316,41 +1338,71 @@ export default function Dashboard() {
               </>
             )}
           </p>
+          <div className="mt-2.5 rounded-2xl bg-black/50 border border-white/10 px-3 py-2" style={{ backdropFilter: 'blur(8px)' }}>
+            <div className="flex justify-between text-[11px] font-extrabold">
+              <span className="text-[#ccc]">🎯 daily goal</span>
+              <span>
+                {todayMeters.toLocaleString()} <span className="text-[#888]">/ {goal.toLocaleString()} m</span>
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-black/70 overflow-hidden mt-1.5 border border-white/5">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.min(100, (todayMeters / Math.max(1, goal)) * 100)}%`, background: 'linear-gradient(90deg,#2E7CF6,#FF6B35)', transition: 'width .6s ease' }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* week */}
-      <div className="mt-2">
-        <div className="flex items-center justify-between">
-          <small className="text-[#999] text-[10px] font-extrabold tracking-[.08em]">THIS WEEK</small>
-          <small className="text-[#999] text-[10px] font-extrabold tracking-[.08em]">
-            {week.streak > 0 ? `🔥 ${week.streak} day streak` : 'no streak yet'}
+      <div className="mt-3 rounded-[22px] border border-white/10 px-3 pt-2.5 pb-3" style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 12px 32px rgba(0,0,0,.45)' }}>
+        <div className="flex items-center justify-between px-0.5">
+          <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">THIS WEEK</small>
+          <small className="text-[11px] font-extrabold tracking-wide">
+            {week.streak > 0 ? <span>🔥 <b className="text-[#FF6B35]">{week.streak}</b> day streak</span> : <span className="fox-hint">no streak yet</span>}
           </small>
         </div>
-        <div className="flex gap-[5px] mt-1.5">
+        <div className="flex gap-[5px] mt-2">
           {week.days.map((d, i) => (
             <div
               key={i}
-              className={`flex-1 border-2 border-b-4 rounded-[14px] py-[5px] px-0 pb-1 text-center ${
+              className={`flex-1 rounded-2xl py-[7px] px-0 pb-1.5 text-center border ${
                 d.today
-                  ? 'bg-[#FF6B35] border-[#2E7CF6]'
+                  ? 'border-[#2E7CF6]'
                   : d.hit
-                    ? 'bg-[#FF6B35] border-[#B34A1F]'
-                    : 'bg-[#111] border-[#2a2a2e]'
+                    ? 'border-[#FF6B35]/60'
+                    : 'border-white/5'
               }`}
-              style={d.today ? { boxShadow: '0 0 0 2px rgba(46,124,246,.55)' } : undefined}
+              style={
+                d.today
+                  ? { background: 'linear-gradient(180deg,#FF6B35,#d94f1e)', boxShadow: '0 0 0 2px rgba(46,124,246,.55), 0 6px 18px rgba(255,107,53,.4)' }
+                  : d.hit
+                    ? { background: 'rgba(255,107,53,.14)' }
+                    : { background: 'rgba(255,255,255,.03)' }
+              }
             >
-              <small className={`block text-[9px] font-extrabold ${d.hit || d.today ? 'text-black' : 'text-[#666]'}`}>{d.label}</small>
-              <b className={`block text-[13px] mt-px ${d.hit || d.today ? 'text-black' : ''}`}>{d.hit ? '✓' : d.num}</b>
+              <small className={`block text-[9px] font-black ${d.hit || d.today ? 'text-black' : 'text-[#666]'}`}>{d.label}</small>
+              <b className={`block text-[14px] mt-px ${d.hit || d.today ? 'text-black' : d.today ? '' : 'text-[#eee]'}`}>{d.hit ? '✓' : d.num}</b>
             </div>
           ))}
         </div>
       </div>
 
       {/* live map */}
+      <div className="mt-3 flex items-center justify-between px-0.5">
+        <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">LIVE MAP</small>
+        {tracking ? (
+          <span className="text-[10px] font-black tracking-[.14em] text-[#ff5b5b]">
+            <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />TRACKING
+          </span>
+        ) : (
+          <small className="fox-hint text-[10px] font-bold">pick a pin, hit run!</small>
+        )}
+      </div>
       <div
-        className="relative -mx-4 border-t-2 border-t-[#FF6B35] border-b border-b-[#222] mt-2"
-        style={{ height: 'clamp(240px,42dvh,420px)', boxShadow: '0 -6px 28px rgba(255,107,53,.18)', width: 'calc(100% + 2rem)' }}
+        className="relative mt-1.5 overflow-hidden rounded-[28px] border border-white/10"
+        style={{ height: 'clamp(260px,44dvh,430px)', boxShadow: '0 18px 50px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.10)' }}
       >
         <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#2e2e30' }} />
 
@@ -1549,37 +1601,43 @@ export default function Dashboard() {
             id="runBtn"
             ref={runBtnRef}
             onClick={startRun}
-            className="absolute left-14 right-2.5 bottom-2 z-[501] h-[38px] rounded-[13px] border-2 border-b-4 border-[#B34A1F] bg-[#FF6B35] text-black text-base font-black tracking-wide cursor-pointer"
-            style={{ boxShadow: '0 0 0 3px #2E7CF6, 0 8px 32px rgba(255,107,53,.5)' }}
+            className="absolute left-14 right-2.5 bottom-2 z-[501] h-[48px] rounded-2xl border-2 border-b-4 border-[#B34A1F] text-black text-[17px] font-black tracking-wide cursor-pointer"
+            style={{ background: 'linear-gradient(135deg,#FF6B35,#ff8c42)', boxShadow: '0 0 0 3px rgba(46,124,246,.9), 0 10px 30px rgba(255,107,53,.55)' }}
           >
-            {tracking ? `go to ${targetName} 🏁` : 'run!'}
+            {tracking ? `go to ${targetName} 🏁` : 'run! 🏃'}
           </button>
         )}
       </div>
 
-      {/* bottom row */}
-      <div className="w-full flex gap-2 mt-2">
+      {/* bottom nav */}
+      <div className="w-full grid grid-cols-2 gap-2 mt-3">
         <Link
           id="workoutsBtn"
           to="/workouts"
-          className="fox-btn-primary flex-1 min-w-0 h-14 rounded-[18px] text-[17px] flex items-center justify-center gap-2 no-underline"
-          style={{ boxShadow: '0 8px 24px rgba(255,107,53,.35)', textShadow: '0 1px 4px rgba(0,0,0,.4)' }}
+          className="fox-btn-primary min-w-0 rounded-[22px] px-3 py-3 no-underline"
+          style={{ boxShadow: '0 10px 28px rgba(255,107,53,.35)', textShadow: '0 1px 4px rgba(0,0,0,.4)' }}
         >
-          workouts <span aria-hidden="true">→</span>
+          <span className="block text-[22px] leading-none">💪</span>
+          <span className="block text-[16px] font-black mt-1">workouts →</span>
+          <span className="block text-[10px] font-bold opacity-80">11 groups · live check</span>
         </Link>
         <Link
           id="modelsBtn"
           to="/models"
-          className="flex-1 min-w-0 h-14 rounded-[18px] border-2 border-[#FF6B35] bg-[#111] text-[17px] font-black flex items-center justify-center gap-2 no-underline"
+          className="min-w-0 rounded-[22px] border border-white/10 px-3 py-3 no-underline"
+          style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 10px 28px rgba(0,0,0,.45)' }}
         >
-          models <span aria-hidden="true">→</span>
+          <span className="block text-[22px] leading-none">🎙️</span>
+          <span className="block text-[16px] font-black mt-1">models →</span>
+          <span className="fox-hint block text-[10px] font-bold">voices & helpers</span>
         </Link>
       </div>
 
       {/* profile sheet */}
       {profileOpen && (
-        <div onClick={(e) => e.target === e.currentTarget && setProfileOpen(false)} className="fixed inset-0 z-[998] bg-[rgba(0,0,0,.7)] flex items-center justify-center p-[18px]">
-          <div className="w-[min(92vw,360px)] max-h-[86dvh] overflow-y-auto bg-[#111] border-2 border-b-[5px] border-[#2a2a2e] rounded-[22px] px-4 py-[18px]">
+        <div onClick={(e) => e.target === e.currentTarget && setProfileOpen(false)} className="fixed inset-0 z-[998] bg-black/70" style={{ backdropFilter: 'blur(2px)' }}>
+          <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto w-[min(100vw,480px)] max-h-[88dvh] overflow-y-auto bg-[#141417] border-t-2 border-[#FF6B35] rounded-t-[28px] px-5 pt-2 pb-6" style={{ boxShadow: '0 -18px 60px rgba(0,0,0,.6)' }}>
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-1 mb-3" />
             <div className="text-[19px] font-semibold tracking-tight text-center">Change your Foxit 🦊</div>
             <div className="fox-hint mt-[5px] text-[11px] font-bold text-center">username lives in Settings ⚙</div>
             <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Foxit expression</div>
@@ -1625,8 +1683,9 @@ export default function Dashboard() {
 
       {/* settings sheet */}
       {settingsOpen && (
-        <div onClick={(e) => e.target === e.currentTarget && setSettingsOpen(false)} className="fixed inset-0 z-[998] bg-[rgba(0,0,0,.7)] flex items-center justify-center p-[18px]">
-          <div className="w-[min(92vw,360px)] max-h-[86dvh] overflow-y-auto bg-[#111] border-2 border-b-[5px] border-[#2a2a2e] rounded-[22px] px-4 py-[18px]">
+        <div onClick={(e) => e.target === e.currentTarget && setSettingsOpen(false)} className="fixed inset-0 z-[998] bg-black/70" style={{ backdropFilter: 'blur(2px)' }}>
+          <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto w-[min(100vw,480px)] max-h-[88dvh] overflow-y-auto bg-[#141417] border-t-2 border-[#FF6B35] rounded-t-[28px] px-5 pt-2 pb-6" style={{ boxShadow: '0 -18px 60px rgba(0,0,0,.6)' }}>
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-1 mb-3" />
             <div className="text-[19px] font-semibold tracking-tight text-center">Settings ⚙</div>
             <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Daily goal (meters)</div>
             <div className="mt-2 flex gap-2">
