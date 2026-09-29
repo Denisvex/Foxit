@@ -21,3 +21,6 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+# Foxit React app
+foxit-app/node_modules/
+foxit-app/dist/
