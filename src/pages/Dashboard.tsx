@@ -69,8 +69,10 @@ interface Expression {
 interface Material {
   id: string;
   label: string;
+  desc: string;
   sw: string;
   filter: string;
+  glow: string;
   art?: string;
 }
 
@@ -153,14 +155,14 @@ const EXPRESSIONS: Expression[] = [
 ];
 
 const MATERIALS: Material[] = [
-  { id: 'classic', label: 'Classic', sw: 'linear-gradient(135deg,#FF6B35,#2E7CF6)', filter: '' },
-  { id: 'ruby', label: 'Ruby', sw: 'linear-gradient(135deg,#c22330,#5e0d14)', filter: '', art: 'ruby' },
-  { id: 'sapphire', label: 'Sapphire', sw: 'linear-gradient(135deg,#4da6ff,#0b2fa0)', filter: 'hue-rotate(150deg) saturate(1.6)' },
-  { id: 'emerald', label: 'Emerald', sw: 'linear-gradient(135deg,#3ddc84,#0a6b3a)', filter: 'hue-rotate(110deg) saturate(1.5)' },
-  { id: 'amethyst', label: 'Amethyst', sw: 'linear-gradient(135deg,#c86bff,#5b1a9e)', filter: 'hue-rotate(-110deg) saturate(1.6)' },
-  { id: 'topaz', label: 'Topaz', sw: 'linear-gradient(135deg,#ffd02f,#b87a00)', filter: 'sepia(.5) saturate(2.5) hue-rotate(-10deg)' },
-  { id: 'diamond', label: 'Diamond', sw: 'linear-gradient(135deg,#ffffff,#9adfff)', filter: 'saturate(.3) brightness(1.35)' },
-  { id: 'iron', label: 'Iron', sw: 'linear-gradient(135deg,#cfd2d8,#5a5e66)', filter: 'grayscale(1) brightness(.9) contrast(1.2)' },
+  { id: 'classic', label: 'Classic', desc: 'the original orange fox', sw: 'linear-gradient(135deg,#FF6B35,#2E7CF6)', filter: '', glow: '#FF6B35' },
+  { id: 'ruby', label: 'Ruby', desc: 'hand-drawn ruby art', sw: 'linear-gradient(135deg,#ff4d5e,#5e0d14)', filter: '', glow: '#ff2d40', art: 'ruby' },
+  { id: 'sapphire', label: 'Sapphire', desc: 'deep blue gem', sw: 'linear-gradient(135deg,#6db9ff,#0b2fa0)', filter: 'hue-rotate(165deg) saturate(1.7) brightness(.95)', glow: '#4da6ff' },
+  { id: 'emerald', label: 'Emerald', desc: 'forest green gem', sw: 'linear-gradient(135deg,#5ff0a0,#0a6b3a)', filter: 'hue-rotate(105deg) saturate(1.6) brightness(.95)', glow: '#3ddc84' },
+  { id: 'amethyst', label: 'Amethyst', desc: 'violet crystal', sw: 'linear-gradient(135deg,#d895ff,#5b1a9e)', filter: 'hue-rotate(-115deg) saturate(1.7) brightness(1.02)', glow: '#c86bff' },
+  { id: 'topaz', label: 'Topaz', desc: 'golden shine', sw: 'linear-gradient(135deg,#ffe066,#b87a00)', filter: 'sepia(.55) saturate(2.4) hue-rotate(-12deg) brightness(1.05)', glow: '#ffd02f' },
+  { id: 'diamond', label: 'Diamond', desc: 'icy and bright', sw: 'linear-gradient(135deg,#ffffff,#9adfff)', filter: 'saturate(.22) brightness(1.42) contrast(1.05)', glow: '#bfe9ff' },
+  { id: 'iron', label: 'Iron', desc: 'tough monochrome', sw: 'linear-gradient(135deg,#e2e5ea,#5a5e66)', filter: 'grayscale(1) brightness(.92) contrast(1.25)', glow: '#cfd2d8' },
 ];
 
 const GOAL_PRESETS = [1000, 2000, 5000, 10000];
@@ -1667,18 +1669,56 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Foxit material</div>
+            <div className="relative mx-auto mt-2 w-[168px]">
+              <div
+                aria-hidden
+                className="absolute inset-0 rounded-[28px]"
+                style={{ background: `radial-gradient(circle,${mat.glow}59,transparent 70%)` }}
+              />
+              <img
+                src={`./${artSrc(expr.src, mat)}`}
+                alt={`${expr.label} Foxit in ${mat.label}`}
+                style={
+                  mat.art === 'ruby'
+                    ? { filter: `drop-shadow(0 10px 28px ${mat.glow}66)` }
+                    : {
+                        filter: `${[mat.filter, expr.filter].filter(Boolean).join(' ') || 'none'} drop-shadow(0 10px 28px ${mat.glow}66)`,
+                      }
+                }
+                className="relative block w-full object-contain"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-[28px]"
+                style={{ background: 'linear-gradient(115deg,rgba(255,255,255,.20),transparent 42%)' }}
+              />
+            </div>
+            <div className="mt-1 text-center text-[15px] font-black">
+              {mat.label} <span className="fox-hint text-xs font-bold">· {mat.desc}</span>
+            </div>
             <div className="mt-2.5 grid grid-cols-4 gap-2">
-              {MATERIALS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => pickMat(m.id)}
-                  className={`bg-[#0a0a0a] border-2 rounded-[14px] px-0.5 pt-2 pb-1.5 cursor-pointer ${m.id === mat.id ? 'border-[#FF6B35]' : 'border-[#2a2a2e]'}`}
-                  style={m.id === mat.id ? { boxShadow: '0 0 0 2px rgba(255,107,53,.4)' } : undefined}
-                >
-                  <i className="block w-[30px] h-[30px] rounded-full mx-auto" style={{ background: m.sw }} />
-                  <small className={`block mt-1 text-[9px] font-extrabold ${m.id === mat.id ? 'text-[#FF6B35]' : 'text-[#999]'}`}>{m.label}</small>
-                </button>
-              ))}
+              {MATERIALS.map((m) => {
+                const selected = m.id === mat.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => pickMat(m.id)}
+                    aria-pressed={selected}
+                    className="cursor-pointer rounded-2xl px-0.5 pb-1.5 pt-2.5"
+                    style={
+                      selected
+                        ? { background: 'rgba(255,255,255,.06)', boxShadow: `0 0 0 1.5px ${m.glow}, 0 0 22px ${m.glow}55` }
+                        : { background: 'rgba(255,255,255,.03)' }
+                    }
+                  >
+                    <i
+                      className="mx-auto block h-[34px] w-[34px] rounded-full"
+                      style={{ background: m.sw, boxShadow: selected ? `0 0 16px ${m.glow}` : 'inset 0 2px 4px rgba(255,255,255,.35), inset 0 -3px 6px rgba(0,0,0,.4)' }}
+                    />
+                    <small className={`mt-1 block text-[9px] font-extrabold ${selected ? 'text-white' : 'text-[#8b8b96]'}`}>{m.label}</small>
+                  </button>
+                );
+              })}
             </div>
             <button id="profileClose" onClick={() => setProfileOpen(false)} className="fox-btn-orange block w-full mt-4 rounded-[14px] text-base py-[11px] cursor-pointer">
               done ✓
