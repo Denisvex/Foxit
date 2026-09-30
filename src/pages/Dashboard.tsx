@@ -901,8 +901,20 @@ export default function Dashboard() {
     }
     mapRef.current = map;
     map.attributionControl.setPrefix(false);
-    map.attributionControl.addAttribution('© OpenStreetMap');
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    map.attributionControl.addAttribution('© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>');
+    const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20,
+      subdomains: 'abcd',
+    }).addTo(map);
+    let tileErrs = 0;
+    tiles.on('tileerror', () => {
+      tileErrs++;
+      if (tileErrs >= 4 && aliveRef.current) setMapFailed(true);
+    });
+    tiles.on('tileload', () => {
+      tileErrs = 0;
+      if (aliveRef.current) setMapFailed(false);
+    });
     const defs = allSpotDefs(customsRef.current);
     for (const id of Object.keys(SPOTS)) {
       routesRef.current[id] = L.polyline([], {
@@ -1306,7 +1318,8 @@ export default function Dashboard() {
       <style>{`
         .fox-screen{height:100dvh;max-width:430px;width:94vw;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;padding:0 16px calc(10px + env(safe-area-inset-bottom));animation:fox-in .35s ease both}
         .leaflet-container{background:#101014;font:inherit}
-        .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.5) contrast(.85);
+        .leaflet-container img.leaflet-tile{max-width:none!important;width:256px!important;height:256px!important}
+        .leaflet-tile-pane{
           -webkit-mask-image:linear-gradient(to bottom,transparent,#000 36px,#000 calc(100% - 36px),transparent);
           mask-image:linear-gradient(to bottom,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
         .leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#555!important;font-size:9px!important;padding:1px 6px!important}
