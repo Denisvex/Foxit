@@ -266,8 +266,8 @@ export default function Workouts() {
                 key={c.p}
                 data-hint={`train ${c.p}`}
                 onClick={() => navigate(`/verify?group=${c.p}`)}
-                style={done ? { borderColor: '#2E7CF6' } : undefined}
-                className="cursor-pointer rounded-[14px] border-2 border-b-4 border-[#2a2a2e] bg-[#111] px-0.5 pb-2 pt-2.5 text-white active:translate-y-0.5 active:border-b-2"
+                style={done ? { background: 'rgba(46,124,246,.14)', boxShadow: '0 0 0 1.5px rgba(46,124,246,.7)' } : undefined}
+                className="cursor-pointer rounded-2xl border border-transparent bg-white/[.04] px-0.5 pb-2 pt-2.5 text-white active:translate-y-0.5"
               >
                 <span className="block">
                   <img

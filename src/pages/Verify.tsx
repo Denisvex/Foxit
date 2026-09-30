@@ -586,7 +586,7 @@ export default function Verify() {
         </div>
 
         <div
-          className="relative mx-auto w-auto max-w-full overflow-hidden rounded-[20px] border-2 border-[#2a2a2e] bg-black"
+          className="relative mx-auto w-auto max-w-full overflow-hidden rounded-[20px] border border-white/10 bg-black"
           style={{ height: 'min(58dvh,150vw)', aspectRatio: '3/4' }}
         >
           <canvas

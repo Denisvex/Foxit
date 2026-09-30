@@ -144,8 +144,8 @@ export default function Models() {
           return (
             <div
               key={m.id}
-              className={`mt-3.5 rounded-[20px] border-2 bg-[#111] p-4 text-left ${
-                on ? 'border-[#FF6B35] shadow-[0_0_0_2px_rgba(255,107,53,.35)]' : 'border-[#222]'
+              className={`mt-3.5 rounded-[20px] bg-white/[.03] p-4 text-left ${
+                on ? 'shadow-[0_0_0_1.5px_rgba(255,107,53,.8)]' : ''
               }`}
             >
               <div className="flex items-center gap-3">

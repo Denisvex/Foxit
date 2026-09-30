@@ -1352,10 +1352,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* hero */}
-      <div className="rise relative mt-2 overflow-hidden rounded-[24px] border border-white/10 shrink-0" style={{ background: 'linear-gradient(165deg,#1a1a21 0%,#0c0c10 70%)', boxShadow: '0 14px 36px rgba(0,0,0,.5), 0 0 44px rgba(255,107,53,.12)', animationDelay: '60ms' }}>
-        <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full" style={{ background: 'radial-gradient(circle,rgba(255,107,53,.22),transparent 70%)' }} />
-        <div className="relative flex gap-2.5 p-3 items-center">
+      {/* hero: free-floating, no card */}
+      <div className="rise relative mt-2 shrink-0 px-0.5" style={{ animationDelay: '60ms' }}>
+        <div className="relative flex gap-2.5 items-center">
           <img
             src={`./${artSrc(expr.src, mat)}`}
             alt="Foxit"
@@ -1390,7 +1389,7 @@ export default function Dashboard() {
             <span className="absolute inset-0 flex items-center justify-center text-[12px] font-black tabular-nums">{Math.round(goalPct * 100)}%</span>
           </div>
         </div>
-        <div className="relative px-3 pb-2.5 -mt-0.5">
+        <div className="relative px-0.5 pt-2">
           <div className="flex justify-between text-[10.5px] font-extrabold tabular-nums">
             <span className="fox-hint">{doneCount}/{count} runs · 🔥 {week.streak}</span>
             <span>{todayMeters >= 1000 ? `${(todayMeters / 1000).toFixed(1)}km` : `${todayMeters}m`} <span className="text-[#888]">/ {goal >= 1000 ? `${goal / 1000}km` : `${goal}m`}</span></span>
@@ -1401,25 +1400,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* week */}
-      <div className="rise mt-2 rounded-[20px] border border-white/10 px-2.5 pt-2 pb-2.5 shrink-0" style={{ background: 'linear-gradient(160deg,#15151b,#0b0b0e)', boxShadow: '0 12px 32px rgba(0,0,0,.45)', animationDelay: '120ms' }}>
+      {/* week: bare pills, no card */}
+      <div className="rise mt-2.5 px-0.5 shrink-0" style={{ animationDelay: '120ms' }}>
         <div className="flex gap-[5px]">
           {week.days.map((d, i) => (
             <div
               key={i}
-              className={`flex-1 rounded-xl py-[5px] px-0 pb-1 text-center border ${
-                d.today
-                  ? 'border-[#2E7CF6]'
-                  : d.hit
-                    ? 'border-[#FF6B35]/60'
-                    : 'border-white/5'
-              }`}
+              className="flex-1 rounded-xl py-[5px] px-0 pb-1 text-center"
               style={
                 d.today
-                  ? { background: 'linear-gradient(180deg,#FF6B35,#d94f1e)', boxShadow: '0 0 0 2px rgba(46,124,246,.55), 0 6px 18px rgba(255,107,53,.4)' }
+                  ? { background: 'linear-gradient(180deg,#FF6B35,#d94f1e)', boxShadow: '0 6px 18px rgba(255,107,53,.4)' }
                   : d.hit
                     ? { background: 'rgba(255,107,53,.14)' }
-                    : { background: 'rgba(255,255,255,.03)' }
+                    : { background: 'rgba(255,255,255,.04)' }
               }
             >
               <small className={`block text-[9px] font-black ${d.hit || d.today ? 'text-black' : 'text-[#666]'}`}>{d.label}</small>
