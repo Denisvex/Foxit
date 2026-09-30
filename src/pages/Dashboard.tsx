@@ -1303,8 +1303,10 @@ export default function Dashboard() {
     <div className="fox-screen">
       <style>{`
         .fox-screen{height:100dvh;max-width:430px;width:94vw;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;padding:0 16px calc(10px + env(safe-area-inset-bottom));animation:fox-in .35s ease both}
-        .leaflet-container{background:#2e2e30;font:inherit}
-        .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.5) contrast(.85)}
+        .leaflet-container{background:#101014;font:inherit}
+        .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.5) contrast(.85);
+          -webkit-mask-image:linear-gradient(to bottom,transparent,#000 36px,#000 calc(100% - 36px),transparent);
+          mask-image:linear-gradient(to bottom,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
         .leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#555!important;font-size:9px!important;padding:1px 6px!important}
         .leaflet-control-attribution a{color:#777!important}
         .fp-pin{width:30px;height:30px;border-radius:50%;background:#222;border:2px solid #888;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.6)}
@@ -1424,10 +1426,10 @@ export default function Dashboard() {
 
       {/* live map: full-bleed, part of the app, no frame */}
       <div
-        className="rise relative -mx-4 mt-2 flex-1 min-h-0 border-y border-white/5"
+        className="rise relative -mx-4 mt-2 flex-1 min-h-0"
         style={{ animationDelay: '220ms' }}
       >
-        <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#2e2e30' }} />
+        <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#101014' }} />
 
         <div className="absolute left-2.5 right-2.5 top-2.5 z-[502] flex gap-1.5">
           <div
