@@ -1288,7 +1288,6 @@ export default function Dashboard() {
       }
       return (
         <>
-          <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />
           🏃 <b>{dd}</b> · {Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}
           {left} · reach spot to finish 🏁
         </>
@@ -1314,8 +1313,9 @@ export default function Dashboard() {
     <div className="fox-screen">
       <style>{`
         .fox-screen{height:100dvh;max-width:430px;width:94vw;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;padding:0 16px calc(10px + env(safe-area-inset-bottom));animation:fox-in .35s ease both}
-        .leaflet-container{background:#101014;font:inherit}
+        .leaflet-container{background:#2e2e30;font:inherit}
         .leaflet-container img.leaflet-tile{max-width:none!important;width:256px!important;height:256px!important}
+        .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.5) contrast(.85)}
         .leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#555!important;font-size:9px!important;padding:1px 6px!important}
         .leaflet-control-attribution a{color:#777!important}
         .fp-pin{width:30px;height:30px;border-radius:50%;background:#222;border:2px solid #888;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.6)}
@@ -1433,22 +1433,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* live map: full-bleed, part of the app, no frame */}
+      {/* live map */}
+      <div className="rise mt-2 flex items-center justify-between px-0.5 shrink-0" style={{ animationDelay: '180ms' }}>
+        <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">LIVE MAP</small>
+        {tracking ? (
+          <span className="text-[10px] font-black tracking-[.14em] text-[#ff5b5b]">
+            <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />TRACKING
+          </span>
+        ) : (
+          <small className="fox-hint text-[10px] font-bold">pick a pin, hit run!</small>
+        )}
+      </div>
       <div
-        className="rise relative -mx-4 mt-2 flex-1 min-h-0"
-        style={{ animationDelay: '220ms' }}
+        className="rise relative -mx-4 border-t-2 border-t-[#FF6B35] border-b border-b-[#222] mt-2 flex-1 min-h-0"
+        style={{ boxShadow: '0 -6px 28px rgba(255,107,53,.18)', animationDelay: '220ms' }}
       >
-        <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#101014' }} />
-        {/* darkens + melts tile edges using plain alpha blends only (no filter/mask compositing) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            zIndex: 350,
-            background:
-              'linear-gradient(to bottom,#16161c 0px,rgba(22,22,28,0) 44px,rgba(22,22,28,0) calc(100% - 44px),#16161c 100%),rgba(10,10,16,.60)',
-          }}
-        />
+        <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#2e2e30' }} />
 
         <div className="absolute left-2.5 right-2.5 top-2.5 z-[502] flex gap-1.5">
           <div
