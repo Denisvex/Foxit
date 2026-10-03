@@ -901,11 +901,8 @@ export default function Dashboard() {
     }
     mapRef.current = map;
     map.attributionControl.setPrefix(false);
-    map.attributionControl.addAttribution('© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>');
-    const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 20,
-      subdomains: 'abcd',
-    }).addTo(map);
+    map.attributionControl.addAttribution('© OpenStreetMap');
+    const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     let tileErrs = 0;
     tiles.on('tileerror', () => {
       tileErrs++;
@@ -1319,9 +1316,6 @@ export default function Dashboard() {
         .fox-screen{height:100dvh;max-width:430px;width:94vw;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;padding:0 16px calc(10px + env(safe-area-inset-bottom));animation:fox-in .35s ease both}
         .leaflet-container{background:#101014;font:inherit}
         .leaflet-container img.leaflet-tile{max-width:none!important;width:256px!important;height:256px!important}
-        .leaflet-tile-pane{
-          -webkit-mask-image:linear-gradient(to bottom,transparent,#000 36px,#000 calc(100% - 36px),transparent);
-          mask-image:linear-gradient(to bottom,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
         .leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#555!important;font-size:9px!important;padding:1px 6px!important}
         .leaflet-control-attribution a{color:#777!important}
         .fp-pin{width:30px;height:30px;border-radius:50%;background:#222;border:2px solid #888;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.6)}
@@ -1445,6 +1439,16 @@ export default function Dashboard() {
         style={{ animationDelay: '220ms' }}
       >
         <div ref={mapDivRef} className="absolute inset-0 z-0" style={{ background: '#101014' }} />
+        {/* darkens + melts tile edges using plain alpha blends only (no filter/mask compositing) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            zIndex: 350,
+            background:
+              'linear-gradient(to bottom,#16161c 0px,rgba(22,22,28,0) 44px,rgba(22,22,28,0) calc(100% - 44px),#16161c 100%),rgba(10,10,16,.60)',
+          }}
+        />
 
         <div className="absolute left-2.5 right-2.5 top-2.5 z-[502] flex gap-1.5">
           <div
