@@ -4,19 +4,7 @@ import { KEYS, loadStr, saveStr } from '../lib/store';
 import { useHelperHints } from '../lib/helper';
 import { useAutoGreet } from '../lib/voice';
 import { useToast } from '../lib/ui';
-
-const GREET = 'Hmm, let me think with you... 🦊';
-const DEFAULT_BUBBLE = 'Hmm, let me think with you... 🦊';
-const TEXTS: Record<string, string> = {
-  '1': 'Chill start — <b>1 run</b> a day. Quality over quantity!',
-  '2': 'Perfect balance — <b>morning & afternoon</b>!',
-  '3': 'Beast mode — <b>3 runs</b> every day!',
-};
-const OPTIONS = [
-  { v: '1', top: 'once', bottom: 'a day' },
-  { v: '2', top: 'morning', bottom: '& afternoon' },
-  { v: '3', top: 'morning', bottom: 'noon & night' },
-];
+import { t, useLang } from '../lib/i18n';
 
 function initialSelection(): string | null {
   const s = loadStr(KEYS.runsPerDay, '');
@@ -27,13 +15,24 @@ function initialSelection(): string | null {
 // requires a pick, stores foxit_runs_per_day, then /schedule.
 export default function Frequency() {
   const navigate = useNavigate();
-  useAutoGreet(GREET);
+  useLang();
+  useAutoGreet(t('frequency.greet'));
   useHelperHints();
   const { toast, toastEl } = useToast();
+  const texts: Record<string, string> = {
+    '1': t('frequency.bubble_1'),
+    '2': t('frequency.bubble_2'),
+    '3': t('frequency.bubble_3'),
+  };
+  const options = [
+    { v: '1', top: t('frequency.opt1_top'), bottom: t('frequency.opt1_bottom') },
+    { v: '2', top: t('frequency.opt2_top'), bottom: t('frequency.opt2_bottom') },
+    { v: '3', top: t('frequency.opt3_top'), bottom: t('frequency.opt3_bottom') },
+  ];
   const [selected, setSelected] = useState<string | null>(initialSelection);
   const [bubble, setBubble] = useState(() => {
     const s = initialSelection();
-    return (s && TEXTS[s]) || DEFAULT_BUBBLE;
+    return (s && texts[s]) || t('frequency.bubble_default');
   });
   const timer = useRef(0);
 
@@ -41,13 +40,13 @@ export default function Frequency() {
 
   const select = (v: string) => {
     setSelected(v);
-    setBubble(TEXTS[v] || DEFAULT_BUBBLE);
+    setBubble(texts[v] || t('frequency.bubble_default'));
   };
 
   const submit = () => {
     if (!selected) {
-      setBubble('Pick <b>1, 2 or 3</b> to keep going! 👆');
-      toast('Pick 1, 2 or 3 to keep going!');
+      setBubble(t('frequency.error_bubble'));
+      toast(t('frequency.error_toast'));
       return;
     }
     saveStr(KEYS.runsPerDay, selected);
@@ -66,21 +65,21 @@ export default function Frequency() {
         <div className="mx-auto aspect-square w-[min(68vw,260px)] animate-[fox-think_2.4s_ease-in-out_infinite]">
           <img
             src="./foxit-thinking.png"
-            alt="Foxit thinking"
+            alt={t('frequency.alt')}
             className="block h-full w-full object-contain drop-shadow-[0_8px_32px_rgba(255,107,53,0.35)]"
           />
         </div>
         <h1 className="mt-3 text-2xl font-semibold leading-[1.3] tracking-[-0.02em]">
-          How many times do you
+          {t('frequency.title_line1')}
           <br />
-          want to run every day?
+          {t('frequency.title_line2')}
         </h1>
         <p className="fox-hint mt-1.5 text-sm">
-          Pick 1 to 3 — you can change it later
+          {t('frequency.subtitle')}
         </p>
 
         <div className="mt-5 flex justify-center gap-2.5">
-          {OPTIONS.map((o) => {
+          {options.map((o) => {
             const active = selected === o.v;
             return (
               <button
@@ -115,14 +114,14 @@ export default function Frequency() {
             onClick={submit}
             className="fox-btn-orange flex h-[62px] w-[270px] items-center justify-center gap-2.5 rounded-full text-lg tracking-[0.02em]"
           >
-            continue <span aria-hidden="true">→</span>
+            {t('frequency.continue')} <span aria-hidden="true">→</span>
           </button>
         </div>
         <button
           onClick={() => navigate('/goal')}
           className="mx-auto mt-3.5 block text-[13px] text-[#666]"
         >
-          ← back
+          {t('frequency.back')}
         </button>
       </div>
       {toastEl}

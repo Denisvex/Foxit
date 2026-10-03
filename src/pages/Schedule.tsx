@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KEYS, load, loadStr, save, saveStr } from '../lib/store';
 import { useHelperHints } from '../lib/helper';
+import { t, tv, useLang } from '../lib/i18n';
 import { useAutoGreet } from '../lib/voice';
 
 type AmPm = 'AM' | 'PM';
@@ -14,12 +15,6 @@ interface RunTime {
 
 // Legacy key the vanilla app also reads from.
 const LEGACY_WALK_TIMES = 'foxit_walk_times';
-
-const NAMES: Record<number, string[]> = {
-  1: ['Your run'],
-  2: ['Morning run', 'Afternoon run'],
-  3: ['Morning run', 'Midday run', 'Evening run'],
-};
 
 const DEFAULTS: Record<number, RunTime[]> = {
   1: [{ h: 8, m: 0, ampm: 'AM' }],
@@ -35,10 +30,6 @@ const DEFAULTS: Record<number, RunTime[]> = {
 };
 
 const FALLBACK_RUN: RunTime = { h: 8, m: 0, ampm: 'AM' };
-
-const GREET = 'Type your run times — hour : minutes + A.M / P.M 🦊';
-const INITIAL_BUBBLE =
-  'Type your run times — <b>hour : minutes</b> + A.M / P.M 🦊';
 
 function parseCount(raw: string): number {
   const n = parseInt(raw, 10);
@@ -94,14 +85,15 @@ function clampM(v: number): number | null {
 // foxit_run_times (JSON) on every change, then /username.
 export default function Schedule() {
   const navigate = useNavigate();
-  useAutoGreet(GREET);
+  useLang();
+  useAutoGreet(t('schedule.greet'));
   const [count, setCount] = useState<number>(() =>
     parseCount(loadStr(KEYS.runsPerDay, '2')),
   );
   const [runs, setRuns] = useState<RunTime[]>(() =>
     initialRuns(parseCount(loadStr(KEYS.runsPerDay, '2'))),
   );
-  const [bubble, setBubble] = useState(INITIAL_BUBBLE);
+  const [bubble, setBubble] = useState(() => t('schedule.bubble_initial'));
   const [lit, setLit] = useState<number[]>([0]);
   const timer = useRef(0);
   useHelperHints([count, runs]);
@@ -123,7 +115,18 @@ export default function Schedule() {
   const markLit = (i: number) =>
     setLit((s) => (s.includes(i) ? s : [...s, i]));
 
-  const runName = (i: number) => NAMES[count]?.[i] ?? `Run ${i + 1}`;
+  const names: Record<number, string[]> = {
+    1: [t('schedule.name_single')],
+    2: [t('schedule.name_morning'), t('schedule.name_afternoon')],
+    3: [
+      t('schedule.name_morning'),
+      t('schedule.name_midday'),
+      t('schedule.name_evening'),
+    ],
+  };
+
+  const runName = (i: number) =>
+    names[count]?.[i] ?? tv('schedule.run_fallback', { n: i + 1 });
 
   const dec = () => {
     if (count <= 1) return;
@@ -160,7 +163,7 @@ export default function Schedule() {
     setRuns(next);
     persist(count, next);
     el.value = String(v).padStart(2, '0');
-    setBubble(`<b>${runName(i)}</b> → <b>${fmt(w)} ${w.ampm}</b> ✓`);
+    setBubble(tv('schedule.time_set', { name: runName(i), time: `${fmt(w)} ${w.ampm}` }));
     markLit(i);
   };
 
@@ -170,14 +173,16 @@ export default function Schedule() {
     if (!w) return;
     setRuns(next);
     persist(count, next);
-    setBubble(`<b>${runName(i)}</b> → <b>${fmt(w)} ${w.ampm}</b> ✓`);
+    setBubble(tv('schedule.time_set', { name: runName(i), time: `${fmt(w)} ${w.ampm}` }));
     markLit(i);
   };
 
   const submit = () => {
     persist(count, runs);
     setBubble(
-      `Locked: <b>${runs.map((w) => `${fmt(w)} ${w.ampm}`).join(' · ')}</b> — let's run!`,
+      tv('schedule.locked', {
+        times: runs.map((w) => `${fmt(w)} ${w.ampm}`).join(' · '),
+      }),
     );
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => navigate('/username'), 600);
@@ -193,21 +198,21 @@ export default function Schedule() {
         <div className="mx-auto aspect-square w-[min(52vw,160px)]">
           <img
             src="./foxit-alarmtime.png"
-            alt="Foxit with alarm"
+            alt={t('schedule.alt')}
             className="block h-full w-full object-contain drop-shadow-[0_8px_32px_rgba(255,107,53,0.35)]"
           />
         </div>
         <h1 className="mt-2.5 text-[22px] font-semibold leading-[1.25] tracking-[-0.02em]">
-          What time
+          {t('schedule.title_line1')}
           <br />
-          are your runs?
+          {t('schedule.title_line2')}
         </h1>
         <p className="fox-hint mt-[5px] text-[13px]">
-          Type the time for each run
+          {t('schedule.subtitle')}
         </p>
 
         <div className="mt-2.5 flex items-center justify-center gap-2 text-[13px] text-[#999]">
-          <span>runs per day</span>
+          <span>{t('schedule.runs_per_day')}</span>
           <div className="flex items-center gap-[7px] rounded-full border border-[#222] bg-[#111] px-[5px] py-[3px]">
             <button
               id="minus"
@@ -245,10 +250,10 @@ export default function Schedule() {
                 </div>
                 <div className="mt-[7px] flex items-center gap-1.5">
                   <input
-                    aria-label="hour"
+                    aria-label={t('schedule.aria_hour')}
                     inputMode="numeric"
                     maxLength={2}
-                    placeholder="07"
+                    placeholder={t('schedule.ph_hour')}
                     defaultValue={String(w.h).padStart(2, '0')}
                     key={`h-${count}-${i}-${w.ampm}`}
                     onBlur={(e) => commitTime(i, 'h', e.currentTarget)}
@@ -262,10 +267,10 @@ export default function Schedule() {
                     :
                   </span>
                   <input
-                    aria-label="minutes"
+                    aria-label={t('schedule.aria_minutes')}
                     inputMode="numeric"
                     maxLength={2}
-                    placeholder="00"
+                    placeholder={t('schedule.ph_minutes')}
                     defaultValue={String(w.m).padStart(2, '0')}
                     key={`m-${count}-${i}-${w.ampm}`}
                     onBlur={(e) => commitTime(i, 'm', e.currentTarget)}
@@ -286,7 +291,7 @@ export default function Schedule() {
                             : 'border-[#222] bg-[#0a0a0a] text-[#999]'
                         }`}
                       >
-                        {a === 'AM' ? 'A.M.' : 'P.M.'}
+                        {a === 'AM' ? t('schedule.am') : t('schedule.pm')}
                       </button>
                     ))}
                   </div>
@@ -302,14 +307,14 @@ export default function Schedule() {
             onClick={submit}
             className="fox-btn-orange flex h-[60px] w-[270px] items-center justify-center gap-2.5 rounded-full text-lg tracking-[0.02em]"
           >
-            continue <span aria-hidden="true">→</span>
+            {t('schedule.continue')} <span aria-hidden="true">→</span>
           </button>
         </div>
         <button
           onClick={() => navigate('/frequency')}
           className="mx-auto mt-3 block text-[13px] text-[#666]"
         >
-          ← back
+          {t('schedule.back')}
         </button>
       </div>
     </div>

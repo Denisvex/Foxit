@@ -20,6 +20,7 @@ import { KEYS, load, loadStr, save, saveStr } from '../lib/store';
 import { useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
 import { useToast } from '../lib/ui';
+import { LANGUAGES, getLangCode, setLang, t, tv, useLang } from '../lib/i18n';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -63,14 +64,14 @@ interface Track {
 interface Expression {
   id: string;
   src: string;
-  label: string;
+  labelKey: string;
   filter?: string;
 }
 
 interface Material {
   id: string;
-  label: string;
-  desc: string;
+  labelKey: string;
+  descKey: string;
   sw: string;
   filter: string;
   glow: string;
@@ -109,10 +110,10 @@ const SPOT_GEO: Record<string, { bearing: number; d: number }> = {
   hill: { bearing: 40, d: 900 },
 };
 
-const NAMES: Record<number, string[]> = {
-  1: ['Your run'],
-  2: ['Morning run', 'Afternoon run'],
-  3: ['Morning run', 'Midday run', 'Evening run'],
+const NAMES_KEYS: Record<number, string[]> = {
+  1: ['dashboard.run_yours'],
+  2: ['dashboard.run_morning', 'dashboard.run_afternoon'],
+  3: ['dashboard.run_morning', 'dashboard.run_midday', 'dashboard.run_evening'],
 };
 
 const DEFAULTS: Record<number, RunTime[]> = {
@@ -131,39 +132,39 @@ const DEFAULTS: Record<number, RunTime[]> = {
 const HOME: [number, number] = [40.7812, -73.9665];
 const FINISH_RADIUS = 50;
 
-const TIPS = [
-  'Drink water before you go! 💧',
-  'Morning runs hit different 🌅',
-  'New spot? Riverside is flat & fast 🏞️',
-  'Streaks are built one run at a time 🔥',
-  'Tie those shoes tight! 👟',
-  'Walk more, scroll less 📵',
+const TIP_KEYS = [
+  'dashboard.tip_0',
+  'dashboard.tip_1',
+  'dashboard.tip_2',
+  'dashboard.tip_3',
+  'dashboard.tip_4',
+  'dashboard.tip_5',
 ];
 
 const EXPRESSIONS: Expression[] = [
-  { id: 'happy', src: 'foxit-dashboard.png', label: 'Happy' },
-  { id: 'runner', src: 'foxit-running.png', label: 'Runner' },
-  { id: 'thinker', src: 'foxit-thinking.png', label: 'Thinker' },
-  { id: 'curious', src: 'foxit-asking.png', label: 'Curious' },
-  { id: 'early', src: 'foxit-alarmtime.png', label: 'Early bird' },
-  { id: 'jumper', src: 'Foxit-loadingpage.png', label: 'Jumper' },
-  { id: 'waver', src: 'Foxit-welcome.png', label: 'Waver' },
-  { id: 'classic', src: 'foxit-logo.png', label: 'Classic' },
-  { id: 'sunset', src: 'foxit-dashboard.png', label: 'Sunset', filter: 'hue-rotate(-40deg) saturate(1.5)' },
-  { id: 'night', src: 'foxit-dashboard.png', label: 'Night owl', filter: 'brightness(.75) saturate(.85) hue-rotate(15deg)' },
-  { id: 'mono', src: 'foxit-dashboard.png', label: 'Mono', filter: 'grayscale(1)' },
-  { id: 'gold', src: 'foxit-dashboard.png', label: 'Gold', filter: 'sepia(.6) saturate(2.2) hue-rotate(-15deg)' },
+  { id: 'happy', src: 'foxit-dashboard.png', labelKey: 'dashboard.expr_happy' },
+  { id: 'runner', src: 'foxit-running.png', labelKey: 'dashboard.expr_runner' },
+  { id: 'thinker', src: 'foxit-thinking.png', labelKey: 'dashboard.expr_thinker' },
+  { id: 'curious', src: 'foxit-asking.png', labelKey: 'dashboard.expr_curious' },
+  { id: 'early', src: 'foxit-alarmtime.png', labelKey: 'dashboard.expr_early' },
+  { id: 'jumper', src: 'Foxit-loadingpage.png', labelKey: 'dashboard.expr_jumper' },
+  { id: 'waver', src: 'Foxit-welcome.png', labelKey: 'dashboard.expr_waver' },
+  { id: 'classic', src: 'foxit-logo.png', labelKey: 'dashboard.expr_classic' },
+  { id: 'sunset', src: 'foxit-dashboard.png', labelKey: 'dashboard.expr_sunset', filter: 'hue-rotate(-40deg) saturate(1.5)' },
+  { id: 'night', src: 'foxit-dashboard.png', labelKey: 'dashboard.expr_night', filter: 'brightness(.75) saturate(.85) hue-rotate(15deg)' },
+  { id: 'mono', src: 'foxit-dashboard.png', labelKey: 'dashboard.expr_mono', filter: 'grayscale(1)' },
+  { id: 'gold', src: 'foxit-dashboard.png', labelKey: 'dashboard.expr_gold', filter: 'sepia(.6) saturate(2.2) hue-rotate(-15deg)' },
 ];
 
 const MATERIALS: Material[] = [
-  { id: 'classic', label: 'Classic', desc: 'the original orange fox', sw: 'linear-gradient(135deg,#FF6B35,#2E7CF6)', filter: '', glow: '#FF6B35' },
-  { id: 'ruby', label: 'Ruby', desc: 'hand-drawn ruby art', sw: 'linear-gradient(135deg,#ff4d5e,#5e0d14)', filter: '', glow: '#ff2d40', art: 'ruby' },
-  { id: 'sapphire', label: 'Sapphire', desc: 'deep blue gem', sw: 'linear-gradient(135deg,#6db9ff,#0b2fa0)', filter: 'hue-rotate(165deg) saturate(1.7) brightness(.95)', glow: '#4da6ff' },
-  { id: 'emerald', label: 'Emerald', desc: 'forest green gem', sw: 'linear-gradient(135deg,#5ff0a0,#0a6b3a)', filter: 'hue-rotate(105deg) saturate(1.6) brightness(.95)', glow: '#3ddc84' },
-  { id: 'amethyst', label: 'Amethyst', desc: 'violet crystal', sw: 'linear-gradient(135deg,#d895ff,#5b1a9e)', filter: 'hue-rotate(-115deg) saturate(1.7) brightness(1.02)', glow: '#c86bff' },
-  { id: 'topaz', label: 'Topaz', desc: 'golden shine', sw: 'linear-gradient(135deg,#ffe066,#b87a00)', filter: 'sepia(.55) saturate(2.4) hue-rotate(-12deg) brightness(1.05)', glow: '#ffd02f' },
-  { id: 'diamond', label: 'Diamond', desc: 'icy and bright', sw: 'linear-gradient(135deg,#ffffff,#9adfff)', filter: 'saturate(.22) brightness(1.42) contrast(1.05)', glow: '#bfe9ff' },
-  { id: 'iron', label: 'Iron', desc: 'tough monochrome', sw: 'linear-gradient(135deg,#e2e5ea,#5a5e66)', filter: 'grayscale(1) brightness(.92) contrast(1.25)', glow: '#cfd2d8' },
+  { id: 'classic', labelKey: 'dashboard.mat_classic', descKey: 'dashboard.matd_classic', sw: 'linear-gradient(135deg,#FF6B35,#2E7CF6)', filter: '', glow: '#FF6B35' },
+  { id: 'ruby', labelKey: 'dashboard.mat_ruby', descKey: 'dashboard.matd_ruby', sw: 'linear-gradient(135deg,#ff4d5e,#5e0d14)', filter: '', glow: '#ff2d40', art: 'ruby' },
+  { id: 'sapphire', labelKey: 'dashboard.mat_sapphire', descKey: 'dashboard.matd_sapphire', sw: 'linear-gradient(135deg,#6db9ff,#0b2fa0)', filter: 'hue-rotate(165deg) saturate(1.7) brightness(.95)', glow: '#4da6ff' },
+  { id: 'emerald', labelKey: 'dashboard.mat_emerald', descKey: 'dashboard.matd_emerald', sw: 'linear-gradient(135deg,#5ff0a0,#0a6b3a)', filter: 'hue-rotate(105deg) saturate(1.6) brightness(.95)', glow: '#3ddc84' },
+  { id: 'amethyst', labelKey: 'dashboard.mat_amethyst', descKey: 'dashboard.matd_amethyst', sw: 'linear-gradient(135deg,#d895ff,#5b1a9e)', filter: 'hue-rotate(-115deg) saturate(1.7) brightness(1.02)', glow: '#c86bff' },
+  { id: 'topaz', labelKey: 'dashboard.mat_topaz', descKey: 'dashboard.matd_topaz', sw: 'linear-gradient(135deg,#ffe066,#b87a00)', filter: 'sepia(.55) saturate(2.4) hue-rotate(-12deg) brightness(1.05)', glow: '#ffd02f' },
+  { id: 'diamond', labelKey: 'dashboard.mat_diamond', descKey: 'dashboard.matd_diamond', sw: 'linear-gradient(135deg,#ffffff,#9adfff)', filter: 'saturate(.22) brightness(1.42) contrast(1.05)', glow: '#bfe9ff' },
+  { id: 'iron', labelKey: 'dashboard.mat_iron', descKey: 'dashboard.matd_iron', sw: 'linear-gradient(135deg,#e2e5ea,#5a5e66)', filter: 'grayscale(1) brightness(.92) contrast(1.25)', glow: '#cfd2d8' },
 ];
 
 const GOAL_PRESETS = [1000, 2000, 5000, 10000];
@@ -325,6 +326,7 @@ function loadBoot(today: string): Boot {
 /* ------------------------------------------------------------------ */
 
 export default function Dashboard() {
+  useLang();
   const [now] = useState(() => new Date());
   const todayKey = dayKey(now);
   const [boot] = useState(() => loadBoot(dayKey(new Date())));
@@ -351,11 +353,30 @@ export default function Dashboard() {
   const [goalInput, setGoalInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [musicOn, setMusicOn] = useState(() => musicEnabled());
+  const [langQuery, setLangQuery] = useState('');
+  const activeLang = getLangCode();
+  const shownLangs = useMemo(() => {
+    const q = langQuery.trim().toLowerCase();
+    if (!q) return LANGUAGES;
+    return LANGUAGES.filter(
+      (l) => l.name.toLowerCase().includes(q) || l.native.toLowerCase().includes(q),
+    );
+  }, [langQuery, activeLang]);
+
+  const pickLang = (code: string, complete: boolean, native: string): void => {
+    if (!complete) {
+      toast(tv('dashboard.lang_soon', { lang: native }));
+      return;
+    }
+    setLang(code);
+    setLangQuery('');
+    toast(tv('dashboard.lang_set', { lang: native }));
+  };
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NominatimResult[]>([]);
-  const [searchMsg, setSearchMsg] = useState<string | null>('Type to search anywhere in the world 🌍');
+  const [searchMsg, setSearchMsg] = useState<string | null>(() => t('dashboard.search_hint'));
   const [searching, setSearching] = useState(false);
 
   const [chipsVisible, setChipsVisible] = useState(false);
@@ -368,7 +389,7 @@ export default function Dashboard() {
   const [mapFailed, setMapFailed] = useState(false);
 
   const { toast, toastEl } = useToast();
-  useAutoGreet(`Welcome, ${boot.username}! Pick a spot and hit run!`);
+  useAutoGreet(tv('dashboard.greet', { name: boot.username }));
   useHelperHints([
     profileOpen,
     settingsOpen,
@@ -439,7 +460,7 @@ export default function Dashboard() {
     const off = (now.getDay() + 6) % 7;
     const mon = new Date(now);
     mon.setDate(now.getDate() - off);
-    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const labels = ['dashboard.wd_mon', 'dashboard.wd_tue', 'dashboard.wd_wed', 'dashboard.wd_thu', 'dashboard.wd_fri', 'dashboard.wd_sat', 'dashboard.wd_sun'].map((k) => t(k));
     const days = [];
     for (let i = 0; i < 7; i++) {
       const dayD = new Date(mon);
@@ -620,10 +641,10 @@ export default function Dashboard() {
   const locate = useCallback(
     (recenter: boolean) => {
       if (!navigator.geolocation) {
-        if (recenter) toast('GPS unavailable');
+        if (recenter) toast(t('dashboard.gps_unavailable'));
         return;
       }
-      if (recenter) toast('Locating… 📍');
+      if (recenter) toast(t('dashboard.locating'));
       navigator.geolocation.getCurrentPosition(
         (p) => {
           if (!aliveRef.current) return;
@@ -648,11 +669,11 @@ export default function Dashboard() {
             } catch {
               map.setView(c, 16);
             }
-            toast('GPS live — teleported to you! 🏃');
+            toast(t('dashboard.gps_live'));
           } else map.setView(c, 14);
         },
         () => {
-          if (recenter) toast('Location blocked — tap 🔒/ⓘ in address bar → Location → Allow 📍');
+          if (recenter) toast(t('dashboard.loc_blocked'));
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 },
       );
@@ -696,7 +717,7 @@ export default function Dashboard() {
       }
       tempMarkerRef.current = null;
       tempLatLngRef.current = null;
-      toast('Start point set! 🏁');
+      toast(t('dashboard.start_set'));
     },
     [drawPath, drawStartMarker, toast],
   );
@@ -740,7 +761,7 @@ export default function Dashboard() {
     stopTrackingCleanup();
     const meters = Math.round(trDistRef.current);
     const secs = Math.floor((Date.now() - trT0Ref.current) / 1000);
-    const name = trTargetNameRef.current || 'spot';
+    const name = trTargetNameRef.current || t('dashboard.spot_word');
     const tracks = load<Track[]>('foxit_tracks', []);
     tracks.push({ d: todayKey, t: Date.now(), meters, secs, spot: spotRef.current });
     save('foxit_tracks', tracks);
@@ -759,8 +780,8 @@ export default function Dashboard() {
     const r = runBtnRef.current?.getBoundingClientRect();
     if (r) confetti(r.left + r.width / 2, r.top);
     const dd = meters < 1000 ? `${meters} m` : `${(meters / 1000).toFixed(2)} km`;
-    const names = NAMES[countRef.current] ?? NAMES[2];
-    toast(i !== -1 ? `Arrived at ${name}! ${dd} · ${names[i] ?? 'run'} 🎉` : `Arrived! ${dd} 🎉`);
+    const names = (NAMES_KEYS[countRef.current] ?? NAMES_KEYS[2]).map((k) => t(k));
+    toast(i !== -1 ? tv('dashboard.arrived', { name, dist: dd, run: names[i] ?? t('dashboard.run_yours') }) : tv('dashboard.arrived_plain', { dist: dd }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectSpot, stopTrackingCleanup, toast]);
 
@@ -778,21 +799,21 @@ export default function Dashboard() {
       const last = trLastRef.current;
       if (tgt && last) {
         const r = Math.round(hav(last, [tgt.lat, tgt.lng]));
-        left = ` — ${r < 1000 ? `${r} m` : `${(r / 1000).toFixed(2)} km`} left`;
+        left = tv('dashboard.reach_left', { dist: r < 1000 ? `${r} m` : `${(r / 1000).toFixed(2)} km` });
       }
-      toast(`Reach ${trTargetNameRef.current || 'your spot'} to finish${left} 🏁`);
+      toast(tv('dashboard.reach_to', { target: trTargetNameRef.current || t('dashboard.your_spot'), left }));
       return;
     }
     if (!navigator.geolocation) {
-      toast('No GPS on this device 📍');
+      toast(t('dashboard.no_gps'));
       return;
     }
     if (!mapRef.current) {
-      toast('Map offline');
+      toast(t('dashboard.map_offline_short'));
       return;
     }
     if (!window.isSecureContext) {
-      toast('Open via http://127.0.0.1:8000 — GPS needs it 🔒');
+      toast(tv('dashboard.gps_secure', { url: 'http://127.0.0.1:8000' }));
       return;
     }
     const begin = (p: GeolocationPosition) => {
@@ -800,13 +821,13 @@ export default function Dashboard() {
       const map = mapRef.current;
       const mk = markersRef.current[spotRef.current];
       if (!map || !mk) {
-        toast('Pick a spot first 📍');
+        toast(t('dashboard.pick_spot'));
         return;
       }
-      const t = mk.getLatLng();
-      trTargetRef.current = { lat: t.lat, lng: t.lng };
+      const ll = mk.getLatLng();
+      trTargetRef.current = { lat: ll.lat, lng: ll.lng };
       const defs = allSpotDefs(customsRef.current);
-      trTargetNameRef.current = defs[spotRef.current]?.name ?? 'spot';
+      trTargetNameRef.current = defs[spotRef.current]?.name ?? t('dashboard.spot_word');
       setTargetName(trTargetNameRef.current);
       trackingRef.current = true;
       trDistRef.current = 0;
@@ -859,18 +880,18 @@ export default function Dashboard() {
             finishRun();
           }
         },
-        () => toast('GPS lost 😕'),
+        () => toast(t('dashboard.gps_lost')),
         { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 },
       );
       trTimerRef.current = window.setInterval(tickRun, 1000);
-      toast(`GPS live — reach ${trTargetNameRef.current}! 🏃`);
+      toast(tv('dashboard.gps_go', { name: trTargetNameRef.current }));
     };
-    toast('Waiting for GPS… 📍');
+    toast(t('dashboard.waiting_gps'));
     const opts: PositionOptions = { enableHighAccuracy: true, timeout: 10000 };
     const ask = () =>
       navigator.geolocation.getCurrentPosition(
         begin,
-        () => toast('Blocked: tap 🔒/ⓘ in address bar → Location → Allow 📍'),
+        () => toast(t('dashboard.gps_blocked')),
         opts,
       );
     try {
@@ -878,7 +899,7 @@ export default function Dashboard() {
         navigator.permissions
           .query({ name: 'geolocation' as PermissionName })
           .then((r) => {
-            if (r.state === 'denied') toast('Blocked: tap 🔒/ⓘ in address bar → Location → Allow 📍');
+            if (r.state === 'denied') toast(t('dashboard.gps_blocked'));
             else ask();
           })
           .catch(ask);
@@ -1047,7 +1068,7 @@ export default function Dashboard() {
       }
     }
     if (spotRef.current === id) selectSpot('park');
-    toast('Spot deleted');
+    toast(t('dashboard.spot_deleted'));
   };
 
   const closeSpotForm = (): void => {
@@ -1066,7 +1087,7 @@ export default function Dashboard() {
 
   const toggleAdd = (): void => {
     if (!mapRef.current) {
-      toast('Map offline — spots still selectable');
+      toast(t('dashboard.map_offline_chips'));
       return;
     }
     if (adding) {
@@ -1075,13 +1096,13 @@ export default function Dashboard() {
     } else {
       setAdding(true);
       setStartArmed(false);
-      toast('Tap the map where you want your spot 📍');
+      toast(t('dashboard.tap_spot'));
     }
   };
 
   const toggleStartArm = (): void => {
     if (!mapRef.current) {
-      toast('Map offline');
+      toast(t('dashboard.map_offline_short'));
       return;
     }
     if (startArmed) {
@@ -1090,17 +1111,17 @@ export default function Dashboard() {
       setAdding(false);
       closeSpotForm();
       setStartArmed(true);
-      toast('Tap the map for your START point 🏁');
+      toast(t('dashboard.tap_start'));
     }
   };
 
   const saveSpot = (): void => {
     const ll = tempLatLngRef.current;
     if (!ll) {
-      toast('Tap the map first 📍');
+      toast(t('dashboard.tap_first'));
       return;
     }
-    const name = formName.trim().slice(0, 24) || 'My spot';
+    const name = formName.trim().slice(0, 24) || t('dashboard.my_spot');
     let dist = parseInt(formDist, 10);
     if (!(dist > 0)) dist = 1000;
     if (dist > 50000) dist = 50000;
@@ -1113,7 +1134,7 @@ export default function Dashboard() {
     addCustomMarker(c);
     setAdding(false);
     selectSpot(c.id);
-    toast(`📍 ${name} added!`);
+    toast(tv('dashboard.spot_added', { name }));
   };
 
   /* ------------------------- search ------------------------- */
@@ -1122,7 +1143,7 @@ export default function Dashboard() {
     setSearchOpen(true);
     setQuery('');
     setResults([]);
-    setSearchMsg('Type to search anywhere in the world 🌍');
+    setSearchMsg(t('dashboard.search_hint'));
     setSearching(false);
     window.setTimeout(() => {
       try {
@@ -1154,7 +1175,7 @@ export default function Dashboard() {
       setSearching(false);
       if (!r.length) {
         setResults([]);
-        setSearchMsg('Nothing found 😕');
+        setSearchMsg(t('dashboard.search_none'));
         return;
       }
       setResults(r);
@@ -1163,7 +1184,7 @@ export default function Dashboard() {
       if (token === searchSeqRef.current && aliveRef.current) {
         setSearching(false);
         setResults([]);
-        setSearchMsg('Offline — search needs internet 😕');
+        setSearchMsg(t('dashboard.search_offline'));
       }
     }
   };
@@ -1175,7 +1196,7 @@ export default function Dashboard() {
     if (q.length < 3) {
       setSearching(false);
       setResults([]);
-      setSearchMsg('Keep typing…');
+      setSearchMsg(t('dashboard.search_keep'));
       return;
     }
     setSearching(true);
@@ -1207,14 +1228,14 @@ export default function Dashboard() {
     const e = exprOf(id);
     setExprId(e.id);
     saveStr(KEYS.expression, e.id);
-    toast(`Foxit is feeling ${e.label}! 🦊`);
+    toast(tv('dashboard.feeling', { label: t(e.labelKey) }));
   };
 
   const pickMat = (id: string): void => {
     const m = matOf(id);
     setMatId(m.id);
     saveStr(KEYS.material, m.id);
-    toast(`${m.label} Foxit equipped!`);
+    toast(tv('dashboard.equipped', { label: t(m.labelKey) }));
   };
 
   /* ------------------------- settings ------------------------- */
@@ -1228,16 +1249,16 @@ export default function Dashboard() {
   const saveGoal = (): void => {
     const v = parseInt(goalInput, 10);
     if (!v || v < 100) {
-      toast('At least 100 meters! 🦊');
+      toast(t('dashboard.goal_min'));
       return;
     }
     if (v > 50000) {
-      toast('Keep it under 50000m!');
+      toast(t('dashboard.goal_max'));
       return;
     }
     setGoal(v);
     saveStr(KEYS.goalMeters, String(v));
-    toast(`Daily goal: ${v.toLocaleString()}m! 🎯`);
+    toast(tv('dashboard.goal_saved', { v: v.toLocaleString() }));
   };
 
   const setRuns = (n: number): void => {
@@ -1255,22 +1276,22 @@ export default function Dashboard() {
     logRef.current = nextLog;
     setLog(nextLog);
     save(KEYS.log, nextLog);
-    toast(n === 1 ? 'Chill start — 1 run a day!' : n === 2 ? 'Perfect — morning & afternoon!' : 'Beast mode — 3 runs! 🔥');
+    toast(n === 1 ? t('dashboard.runs_1_toast') : n === 2 ? t('dashboard.runs_2_toast') : t('dashboard.runs_3_toast'));
   };
 
   const saveName = (): void => {
     const v = nameInput.trim().replace(/\s+/g, '_').slice(0, 16);
     if (v.length < 2) {
-      toast('Give me at least 2 letters! 🦊');
+      toast(t('dashboard.name_min'));
       return;
     }
     if (!/^[A-Za-z0-9_.-]+$/.test(v)) {
-      toast('Letters, numbers, _ . - only!');
+      toast(t('dashboard.name_chars'));
       return;
     }
     setUsername(v);
     saveStr(KEYS.username, v);
-    toast(`Nice to meet you, ${v}! 🦊`);
+    toast(tv('dashboard.name_hi', { v }));
   };
 
   /* ------------------------- run line ------------------------- */
@@ -1286,12 +1307,12 @@ export default function Dashboard() {
       if (tgt && last) {
         const r = Math.round(hav(last, [tgt.lat, tgt.lng]));
         const rr = r < 1000 ? `${r} m` : `${(r / 1000).toFixed(2)} km`;
-        left = ` · ${rr} to ${trTargetNameRef.current}`;
+        left = ` · ${tv('dashboard.to_go', { dist: rr, name: trTargetNameRef.current })}`;
       }
       return (
         <>
           🏃 <b>{dd}</b> · {Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}
-          {left} · reach spot to finish 🏁
+          {left} · {t('dashboard.track_suffix')}
         </>
       );
     }
@@ -1348,8 +1369,8 @@ export default function Dashboard() {
       {/* topbar — sticky glass */}
       <div className="rise sticky top-0 z-[600] -mx-4 px-4 pt-2 pb-2.5" style={{ backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', background: 'linear-gradient(rgba(10,10,15,.94),rgba(10,10,15,.72))', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
         <div className="flex items-center justify-between">
-          <button id="profileBtn" onClick={() => setProfileOpen(true)} aria-label="edit profile" className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3.5 py-1 cursor-pointer" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
-            <img src="./foxit-logo.png" alt="Foxit logo" className="w-[30px] h-[30px] rounded-full block" style={{ boxShadow: '0 0 0 2px #FF6B35' }} />
+          <button id="profileBtn" onClick={() => setProfileOpen(true)} aria-label={t('dashboard.profile_aria')} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3.5 py-1 cursor-pointer" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+            <img src="./foxit-logo.png" alt={t('dashboard.logo_alt')} className="w-[30px] h-[30px] rounded-full block" style={{ boxShadow: '0 0 0 2px #FF6B35' }} />
             <b className="text-[16px] tracking-tight">
               fox<span className="text-[#FF6B35]">it</span>
             </b>
@@ -1358,7 +1379,7 @@ export default function Dashboard() {
             <span className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
               <Flame size={14} weight="fill" className="text-[#FF6B35]" /> <b className="text-[#FF6B35]">{week.streak}</b>
             </span>
-            <button id="settingsBtn" onClick={openSettings} aria-label="settings" className="flex bg-white/5 border border-white/10 rounded-full w-[34px] h-[34px] text-sm font-extrabold cursor-pointer items-center justify-center" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
+            <button id="settingsBtn" onClick={openSettings} aria-label={t('dashboard.settings_aria')} className="flex bg-white/5 border border-white/10 rounded-full w-[34px] h-[34px] text-sm font-extrabold cursor-pointer items-center justify-center" style={{ boxShadow: '0 4px 16px rgba(0,0,0,.4)' }}>
               <Gear size={16} weight="bold" />
             </button>
           </div>
@@ -1370,25 +1391,25 @@ export default function Dashboard() {
         <div className="relative flex gap-2.5 items-center">
           <img
             src={`./${artSrc(expr.src, mat)}`}
-            alt="Foxit"
+            alt={t('dashboard.hero_alt')}
             onClick={() => setTipIdx((i) => (i === null ? 0 : i + 1))}
             style={heroFilter ? { filter: heroFilter } : undefined}
             className="w-[76px] h-[76px] rounded-[20px] object-cover cursor-pointer border border-white/10 shrink-0 active:scale-[.97]"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-black tracking-[.22em] text-[#8b8b96]">TODAY</p>
+            <p className="text-[10px] font-black tracking-[.22em] text-[#8b8b96]">{t('dashboard.today')}</p>
             <h2 className="text-[20px] font-semibold tracking-tight leading-tight truncate">
               {username}<span className="text-[#FF6B35]">!</span>
             </h2>
             <p className="text-[12px] text-[#cfcfd6] mt-px leading-snug line-clamp-2">
-              {tipIdx === null ? (
-                <>Pick a spot and hit <b className="text-[#FF6B35]">run!</b></>
+               {tipIdx === null ? (
+                <>{t('dashboard.hero_pick')} <b className="text-[#FF6B35]">{t('dashboard.hero_run')}</b></>
               ) : (
-                <>{TIPS[tipIdx % TIPS.length]}</>
+                <>{t(TIP_KEYS[tipIdx % TIP_KEYS.length])}</>
               )}
             </p>
           </div>
-          <div className="relative w-[60px] h-[60px] shrink-0" role="img" aria-label={`${Math.round(goalPct * 100)} percent of daily goal`}>
+          <div className="relative w-[60px] h-[60px] shrink-0" role="img" aria-label={tv('dashboard.goal_aria', { pct: Math.round(goalPct * 100) })}>
             <svg viewBox="0 0 44 44" className="w-full h-full -rotate-90">
               <defs>
                 <linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1">
@@ -1404,7 +1425,7 @@ export default function Dashboard() {
         </div>
         <div className="relative px-0.5 pt-2">
           <div className="flex justify-between text-[10.5px] font-extrabold tabular-nums">
-            <span className="fox-hint">{doneCount}/{count} runs · 🔥 {week.streak}</span>
+            <span className="fox-hint">{tv('dashboard.runs_line', { done: doneCount, count, streak: week.streak })}</span>
             <span>{todayMeters >= 1000 ? `${(todayMeters / 1000).toFixed(1)}km` : `${todayMeters}m`} <span className="text-[#888]">/ {goal >= 1000 ? `${goal / 1000}km` : `${goal}m`}</span></span>
           </div>
           <div className="h-1.5 rounded-full bg-black/70 overflow-hidden mt-1 border border-white/5">
@@ -1437,13 +1458,13 @@ export default function Dashboard() {
 
       {/* live map */}
       <div className="rise mt-2 flex items-center justify-between px-0.5 shrink-0" style={{ animationDelay: '180ms' }}>
-        <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">LIVE MAP</small>
+        <small className="text-[#8b8b96] text-[10px] font-black tracking-[.14em]">{t('dashboard.live_map')}</small>
         {tracking ? (
           <span className="text-[10px] font-black tracking-[.14em] text-[#ff5b5b]">
-            <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />TRACKING
+            <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-[#ff5b5b] mr-1 align-middle" />{t('dashboard.tracking')}
           </span>
         ) : (
-          <small className="fox-hint text-[10px] font-bold">pick a pin, hit run!</small>
+          <small className="fox-hint text-[10px] font-bold">{t('dashboard.pick_pin')}</small>
         )}
       </div>
       <div
@@ -1462,7 +1483,7 @@ export default function Dashboard() {
           <button
             id="searchBtn"
             onClick={openSearch}
-            aria-label="search places"
+            aria-label={t('dashboard.search_aria')}
             className="flex shrink-0 w-[38px] items-center justify-center rounded-xl border-2 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-base cursor-pointer"
           >
             <MagnifyingGlass size={18} weight="bold" />
@@ -1476,21 +1497,21 @@ export default function Dashboard() {
                 ref={searchInputRef}
                 value={query}
                 onChange={(e) => onQueryChange(e.target.value)}
-                placeholder="Search places, addresses…"
+                placeholder={t('dashboard.search_ph')}
                 autoComplete="off"
                 className="flex-1 min-w-0 bg-[#0a0a0a] border-2 border-[#FF6B35] rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none"
               />
               <button
                 id="searchClose"
                 onClick={closeSearch}
-                aria-label="close search"
+                aria-label={t('dashboard.search_close_aria')}
                 className="flex shrink-0 w-11 items-center justify-center rounded-xl border-2 border-[#3a3a40] bg-[#222] text-lg font-extrabold cursor-pointer"
               >
                 <X size={18} weight="bold" />
               </button>
             </div>
             <div>
-              {searching && <div className="fox-hint text-xs text-center mt-3.5">Searching…</div>}
+              {searching && <div className="fox-hint text-xs text-center mt-3.5">{t('dashboard.searching')}</div>}
               {!searching && searchMsg && <div className="fox-hint text-xs text-center mt-3.5">{searchMsg}</div>}
               {!searching &&
                 results.map((p, i) => {
@@ -1513,7 +1534,7 @@ export default function Dashboard() {
         <button
           id="mapToggle"
           onClick={() => setMapToolsVisible((v) => !v)}
-          aria-label="show map buttons"
+          aria-label={t('dashboard.tools_aria')}
           className={`absolute right-2.5 bottom-[54px] z-[501] w-[38px] h-[38px] rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer flex items-center justify-center ${
             mapToolsVisible ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : ''
           }`}
@@ -1524,7 +1545,7 @@ export default function Dashboard() {
         <button
           id="spotsBtn"
           onClick={() => setChipsVisible((v) => !v)}
-          aria-label="show spots"
+          aria-label={t('dashboard.spots_aria')}
           className="fox-btn-orange absolute left-2.5 bottom-2 z-[501] w-[38px] h-[38px] rounded-[13px] text-[17px] flex items-center justify-center cursor-pointer"
         >
           <MapPin size={18} weight="fill" />
@@ -1535,7 +1556,7 @@ export default function Dashboard() {
             <button
               id="gpsBtn"
               onClick={() => locate(true)}
-              aria-label="go to my location"
+              aria-label={t('dashboard.gps_aria')}
               className="flex shrink-0 w-[38px] h-[38px] items-center justify-center rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
               <Crosshair size={18} weight="bold" />
@@ -1543,7 +1564,7 @@ export default function Dashboard() {
             <button
               id="zoomIn"
               onClick={() => mapRef.current?.zoomIn()}
-              aria-label="zoom in"
+              aria-label={t('dashboard.zin_aria')}
               className="flex shrink-0 w-[38px] h-[38px] items-center justify-center rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
               <Plus size={17} weight="bold" />
@@ -1551,7 +1572,7 @@ export default function Dashboard() {
             <button
               id="zoomOut"
               onClick={() => mapRef.current?.zoomOut()}
-              aria-label="zoom out"
+              aria-label={t('dashboard.zout_aria')}
               className="flex shrink-0 w-[38px] h-[38px] items-center justify-center rounded-[13px] border-2 border-b-4 border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md text-[17px] font-extrabold cursor-pointer"
             >
               <Minus size={17} weight="bold" />
@@ -1559,35 +1580,35 @@ export default function Dashboard() {
             <button
               id="addBtn"
               onClick={toggleAdd}
-              aria-label="add spot"
+              aria-label={t('dashboard.add_aria')}
               className={`flex shrink-0 h-[38px] items-center gap-1 rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
                 adding ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md'
               }`}
             >
-              {adding ? 'tap map!' : <><Plus size={15} weight="bold" /> spot</>}
+              {adding ? t('dashboard.tap_map') : <><Plus size={15} weight="bold" /> {t('dashboard.spot')}</>}
             </button>
             <button
               id="startPointBtn"
               onClick={toggleStartArm}
-              aria-label="set start point"
+              aria-label={t('dashboard.start_aria')}
               className={`flex shrink-0 h-[38px] items-center gap-1 rounded-[13px] border-2 border-b-4 px-2.5 text-[13px] font-extrabold cursor-pointer ${
                 startArmed ? 'bg-[#FF6B35] border-[#B34A1F] text-black' : 'border-[#3a3a40] bg-[rgba(12,12,16,.72)] backdrop-blur-md'
               }`}
             >
-              <Play size={14} weight="fill" /> start
+              <Play size={14} weight="fill" /> {t('dashboard.start')}
             </button>
           </div>
         )}
 
         {spotFormOpen && (
           <div className="absolute left-2.5 right-2.5 bottom-11 z-[501] bg-[rgba(17,17,17,.95)] border-2 border-[#FF6B35] rounded-2xl px-3 py-2.5">
-            <div className="text-[13px] font-extrabold">New spot 📍</div>
+            <div className="text-[13px] font-extrabold">{t('dashboard.new_spot')}</div>
             <input
               ref={spotNameRef}
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               maxLength={24}
-              placeholder="Name — e.g. Stadium"
+              placeholder={t('dashboard.spot_name_ph')}
               className="w-full bg-[#0a0a0a] border border-[#333] rounded-[10px] px-2.5 py-2 text-sm font-bold mt-1.5 focus:outline-none focus:border-[#FF6B35]"
             />
             <input
@@ -1595,7 +1616,7 @@ export default function Dashboard() {
               onChange={(e) => setFormDist(e.target.value)}
               inputMode="numeric"
               maxLength={5}
-              placeholder="Distance in meters — e.g. 1000"
+              placeholder={t('dashboard.spot_dist_ph')}
               className="w-full bg-[#0a0a0a] border border-[#333] rounded-[10px] px-2.5 py-2 text-sm font-bold mt-1.5 focus:outline-none focus:border-[#FF6B35]"
             />
             <div className="flex gap-1.5 mt-2">
@@ -1604,10 +1625,10 @@ export default function Dashboard() {
                 onClick={closeSpotForm}
                 className="flex-1 rounded-xl border-2 border-b-4 border-[#3a3a40] bg-[#222] font-extrabold text-[13px] py-2 cursor-pointer"
               >
-                cancel
+                {t('dashboard.cancel')}
               </button>
               <button id="spotSave" onClick={saveSpot} className="fox-btn-orange flex-1 rounded-xl text-[13px] py-2 cursor-pointer">
-                save ✓
+                {t('dashboard.save_spot')}
               </button>
             </div>
           </div>
@@ -1640,7 +1661,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {mapFailed && <div className="absolute left-2.5 right-2.5 bottom-[46px] z-[501] p-2.5 rounded-xl bg-[rgba(26,18,14,.95)] border border-[rgba(255,107,53,.4)] fox-hint text-xs text-center">Offline — map paused. Chips still work. 🦊</div>}
+        {mapFailed && <div className="absolute left-2.5 right-2.5 bottom-[46px] z-[501] p-2.5 rounded-xl bg-[rgba(26,18,14,.95)] border border-[rgba(255,107,53,.4)] fox-hint text-xs text-center">{t('dashboard.map_offline')}</div>}
 
         {!chipsVisible && (
           <button
@@ -1650,7 +1671,7 @@ export default function Dashboard() {
             className="absolute left-14 right-2.5 bottom-2 z-[501] h-[48px] rounded-2xl border-2 border-b-4 border-[#B34A1F] text-black text-[17px] font-black tracking-wide cursor-pointer"
             style={{ background: 'linear-gradient(135deg,#FF6B35,#ff8c42)', boxShadow: '0 0 0 3px rgba(46,124,246,.9), 0 10px 30px rgba(255,107,53,.55)' }}
           >
-            {tracking ? `go to ${targetName} 🏁` : 'run! 🏃'}
+            {tracking ? tv('dashboard.go_to', { target: targetName }) : t('dashboard.run')}
           </button>
         )}
       </div>
@@ -1665,9 +1686,9 @@ export default function Dashboard() {
         <div onClick={(e) => e.target === e.currentTarget && setProfileOpen(false)} className="fixed inset-0 z-[998] bg-black/70" style={{ backdropFilter: 'blur(2px)' }}>
           <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto w-[min(100vw,480px)] max-h-[88dvh] overflow-y-auto bg-[#141417] border-t-2 border-[#FF6B35] rounded-t-[28px] px-5 pt-2 pb-6" style={{ boxShadow: '0 -18px 60px rgba(0,0,0,.6)' }}>
             <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-1 mb-3" />
-            <div className="text-[19px] font-semibold tracking-tight text-center">Change your Foxit 🦊</div>
-            <div className="fox-hint mt-[5px] text-[11px] font-bold text-center">username lives in Settings ⚙</div>
-            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Foxit expression</div>
+            <div className="text-[19px] font-semibold tracking-tight text-center">{t('dashboard.profile_title')}</div>
+            <div className="fox-hint mt-[5px] text-[11px] font-bold text-center">{t('dashboard.profile_note')}</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.expr_title')}</div>
             <div className="mt-2.5 grid grid-cols-3 gap-2">
               {EXPRESSIONS.map((e) => (
                 <button
@@ -1678,16 +1699,16 @@ export default function Dashboard() {
                 >
                   <img
                     src={`./${artSrc(e.src, mat)}`}
-                    alt={e.label}
+                    alt={t(e.labelKey)}
                     loading="lazy"
                     style={mat.art === 'ruby' || !e.filter ? undefined : { filter: e.filter }}
                     className="w-full h-14 object-contain block"
                   />
-                  <small className={`block mt-[3px] text-[10px] font-extrabold ${e.id === expr.id ? 'text-[#FF6B35]' : 'text-[#999]'}`}>{e.label}</small>
+                  <small className={`block mt-[3px] text-[10px] font-extrabold ${e.id === expr.id ? 'text-[#FF6B35]' : 'text-[#999]'}`}>{t(e.labelKey)}</small>
                 </button>
               ))}
             </div>
-            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Foxit material</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.mat_title')}</div>
             <div className="relative mx-auto mt-2 w-[168px]">
               <div
                 aria-hidden
@@ -1696,7 +1717,7 @@ export default function Dashboard() {
               />
               <img
                 src={`./${artSrc(expr.src, mat)}`}
-                alt={`${expr.label} Foxit in ${mat.label}`}
+                alt={tv('dashboard.mat_preview', { expr: t(expr.labelKey), mat: t(mat.labelKey) })}
                 style={
                   mat.art === 'ruby'
                     ? { filter: `drop-shadow(0 10px 28px ${mat.glow}66)` }
@@ -1713,7 +1734,7 @@ export default function Dashboard() {
               />
             </div>
             <div className="mt-1 text-center text-[15px] font-black">
-              {mat.label} <span className="fox-hint text-xs font-bold">· {mat.desc}</span>
+              {t(mat.labelKey)} <span className="fox-hint text-xs font-bold">· {t(mat.descKey)}</span>
             </div>
             <div className="mt-2.5 grid grid-cols-4 gap-2">
               {MATERIALS.map((m) => {
@@ -1734,13 +1755,13 @@ export default function Dashboard() {
                       className="mx-auto block h-[34px] w-[34px] rounded-full"
                       style={{ background: m.sw, boxShadow: selected ? `0 0 16px ${m.glow}` : 'inset 0 2px 4px rgba(255,255,255,.35), inset 0 -3px 6px rgba(0,0,0,.4)' }}
                     />
-                    <small className={`mt-1 block text-[9px] font-extrabold ${selected ? 'text-white' : 'text-[#8b8b96]'}`}>{m.label}</small>
+                    <small className={`mt-1 block text-[9px] font-extrabold ${selected ? 'text-white' : 'text-[#8b8b96]'}`}>{t(m.labelKey)}</small>
                   </button>
                 );
               })}
             </div>
             <button id="profileClose" onClick={() => setProfileOpen(false)} className="fox-btn-orange block w-full mt-4 rounded-[14px] text-base py-[11px] cursor-pointer">
-              done ✓
+              {t('dashboard.done')}
             </button>
           </div>
         </div>
@@ -1751,19 +1772,19 @@ export default function Dashboard() {
         <div onClick={(e) => e.target === e.currentTarget && setSettingsOpen(false)} className="fixed inset-0 z-[998] bg-black/70" style={{ backdropFilter: 'blur(2px)' }}>
           <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto w-[min(100vw,480px)] max-h-[88dvh] overflow-y-auto bg-[#141417] border-t-2 border-[#FF6B35] rounded-t-[28px] px-5 pt-2 pb-6" style={{ boxShadow: '0 -18px 60px rgba(0,0,0,.6)' }}>
             <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-1 mb-3" />
-            <div className="text-[19px] font-semibold tracking-tight text-center">Settings ⚙</div>
-            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Daily goal (meters)</div>
+            <div className="text-[19px] font-semibold tracking-tight text-center">{t('dashboard.settings_title')}</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.goal_label')}</div>
             <div className="mt-2 flex gap-2">
               <input
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && saveGoal()}
                 inputMode="numeric"
-                placeholder="2000"
+                placeholder={t('dashboard.goal_ph')}
                 className="flex-1 min-w-0 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2.5 text-base font-bold text-center focus:outline-none focus:border-[#FF6B35]"
               />
               <button id="goalSave" onClick={saveGoal} className="fox-btn-orange shrink-0 w-[76px] rounded-xl text-sm cursor-pointer">
-                save
+                {t('dashboard.save')}
               </button>
             </div>
             <div className="mt-2 flex gap-1.5 justify-center flex-wrap">
@@ -1779,12 +1800,12 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
-            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Runs per day</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.runs_label')}</div>
             <div className="mt-2 flex gap-2">
               {[
-                { v: 1, sub: 'once a day' },
-                { v: 2, sub: 'morning & afternoon' },
-                { v: 3, sub: 'all day' },
+                { v: 1, subKey: 'dashboard.runs_1' },
+                { v: 2, subKey: 'dashboard.runs_2' },
+                { v: 3, subKey: 'dashboard.runs_3' },
               ].map((p) => (
                 <button
                   key={p.v}
@@ -1793,11 +1814,11 @@ export default function Dashboard() {
                   style={p.v === count ? { boxShadow: '0 0 0 2px rgba(255,107,53,.4)' } : undefined}
                 >
                   <b className={`block text-[22px] ${p.v === count ? 'text-[#FF6B35]' : ''}`}>{p.v}</b>
-                  <small className="fox-hint block text-[10px] font-bold mt-0.5">{p.sub}</small>
+                  <small className="fox-hint block text-[10px] font-bold mt-0.5">{t(p.subKey)}</small>
                 </button>
               ))}
             </div>
-            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Username</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.user_label')}</div>
             <div className="mt-2 flex gap-2">
               <input
                 value={nameInput}
@@ -1805,24 +1826,24 @@ export default function Dashboard() {
                 onKeyDown={(e) => e.key === 'Enter' && saveName()}
                 maxLength={16}
                 autoComplete="nickname"
-                placeholder="e.g. fox_runner"
+                placeholder={t('dashboard.user_ph')}
                 className="flex-1 min-w-0 bg-[#0a0a0a] border border-[#333] rounded-xl px-3 py-2.5 text-base font-bold text-center focus:outline-none focus:border-[#FF6B35]"
               />
               <button id="setNameSave" onClick={saveName} className="fox-btn-orange shrink-0 w-[76px] rounded-xl text-sm cursor-pointer">
-                save
+                {t('dashboard.save')}
               </button>
             </div>
             <Link to="/schedule" className="block mt-3.5 text-center text-[#FF6B35] text-sm font-extrabold no-underline">
-              edit run times →
+              {t('dashboard.edit_times')}
             </Link>
-            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Music</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.music_label')}</div>
             <div className="mt-2 flex gap-2">
               {[
-                { v: true, label: 'on' },
-                { v: false, label: 'off' },
+                { v: true, labelKey: 'dashboard.music_on' },
+                { v: false, labelKey: 'dashboard.music_off' },
               ].map((o) => (
                 <button
-                  key={o.label}
+                  key={String(o.v)}
                   onClick={() => {
                     setMusicOn(o.v);
                     setMusicEnabled(o.v);
@@ -1831,13 +1852,50 @@ export default function Dashboard() {
                   className={`flex-1 rounded-[14px] border-2 py-2.5 text-sm font-black cursor-pointer ${musicOn === o.v ? 'border-[#FF6B35] text-[#FF6B35]' : 'border-[#2a2a2e] text-[#8b8b96]'}`}
                   style={musicOn === o.v ? { background: 'rgba(255,107,53,.12)' } : { background: 'rgba(255,255,255,.03)' }}
                 >
-                  {o.label}
+                  {t(o.labelKey)}
                 </button>
               ))}
             </div>
-            <div className="fox-hint mt-1.5 text-center text-[11px] font-bold">soft ambient loop, made on your phone</div>
+            <div className="fox-hint mt-1.5 text-center text-[11px] font-bold">{t('dashboard.music_note')}</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">{t('dashboard.lang_label')}</div>
+            <div className="mt-2 flex items-center gap-2 rounded-full border border-[#222] bg-[#111] px-4 py-2">
+              <span aria-hidden="true" className="text-[#555]">⌕</span>
+              <input
+                value={langQuery}
+                onChange={(e) => setLangQuery(e.target.value)}
+                autoComplete="off"
+                placeholder={t('dashboard.lang_ph')}
+                aria-label={t('dashboard.lang_label')}
+                className="min-w-0 flex-1 border-none bg-transparent text-sm font-semibold text-white outline-none"
+              />
+            </div>
+            <div className="mt-2 max-h-[220px] overflow-y-auto rounded-2xl border border-white/5">
+              {shownLangs.map((l) => {
+                const on = l.code === activeLang;
+                return (
+                  <button
+                    key={l.code}
+                    onClick={() => pickLang(l.code, l.complete, l.native)}
+                    aria-pressed={on}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left cursor-pointer"
+                    style={{ background: on ? 'rgba(255,107,53,.12)' : 'transparent' }}
+                  >
+                    <span className="text-[15px] font-black">{l.native}</span>
+                    <span className="fox-hint text-[11px] font-bold">{l.name}</span>
+                    {on ? (
+                      <span className="ml-auto text-sm font-black text-[#FF6B35]">✓</span>
+                    ) : !l.complete ? (
+                      <span className="fox-hint ml-auto text-[10px] font-bold">{t('dashboard.lang_soon_tag')}</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+              {shownLangs.length === 0 && (
+                <div className="fox-hint px-3 py-3 text-center text-xs font-bold">{t('dashboard.lang_none')}</div>
+              )}
+            </div>
             <button id="settingsClose" onClick={() => setSettingsOpen(false)} className="fox-btn-orange block w-full mt-4 rounded-[14px] text-base py-[11px] cursor-pointer">
-              done ✓
+              {t('dashboard.done')}
             </button>
           </div>
         </div>
@@ -1846,8 +1904,8 @@ export default function Dashboard() {
       {/* idle thirst overlay */}
       {thirsty && (
         <div className="fixed left-1/2 top-[36%] -translate-x-1/2 -translate-y-1/2 z-[1001] text-center pointer-events-none">
-          <img src="./foxit-thirsty.png" alt="Foxit is thirsty" className="w-[min(58vw,210px)] block mx-auto" style={{ animation: 'fox-bounce 1s ease-in-out infinite', filter: 'drop-shadow(0 8px 32px rgba(46,124,246,.5))' }} />
-          <div className="inline-block mt-2 bg-[#111] border-2 border-[#2E7CF6] font-black text-[15px] rounded-full px-[18px] py-2">Drink water! 💧</div>
+          <img src="./foxit-thirsty.png" alt={t('dashboard.thirsty_alt')} className="w-[min(58vw,210px)] block mx-auto" style={{ animation: 'fox-bounce 1s ease-in-out infinite', filter: 'drop-shadow(0 8px 32px rgba(46,124,246,.5))' }} />
+          <div className="inline-block mt-2 bg-[#111] border-2 border-[#2E7CF6] font-black text-[15px] rounded-full px-[18px] py-2">{t('dashboard.drink')}</div>
         </div>
       )}
 

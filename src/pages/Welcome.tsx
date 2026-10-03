@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHelperHints } from '../lib/helper';
+import { t, useLang } from '../lib/i18n';
 import { useAutoGreet } from '../lib/voice';
-
-const GREET = "Hey! I'm Foxit — let's walk morning & afternoon, scroll less.";
-const BUBBLE = "Hey! I'm <b>Foxit</b> — let's walk morning & afternoon, scroll less.";
 
 // Port of welcome.html: greeting bubble + waving fox, CTA to /goal,
 // replay link back to the loading screen.
 export default function Welcome() {
   const navigate = useNavigate();
-  useAutoGreet(GREET);
+  useLang();
+  useAutoGreet(t('welcome.greet'));
   useHelperHints();
-  const [bubble] = useState(BUBBLE);
+  const [bubble] = useState(() => t('welcome.bubble'));
 
   return (
     <div className="fox-stage flex items-center justify-center">
@@ -25,29 +24,29 @@ export default function Welcome() {
         <div className="mx-auto aspect-square w-[min(68vw,280px)] animate-[fox-wave_2.4s_ease-in-out_infinite]">
           <img
             src="./Foxit-welcome.png"
-            alt="Foxit waving"
+            alt={t('welcome.alt')}
             className="block h-full w-full object-contain drop-shadow-[0_8px_32px_rgba(255,107,53,0.35)]"
           />
         </div>
         <h1 className="mt-3 text-[30px] font-semibold tracking-[-0.02em]">
-          Welcome
+          {t('welcome.title')}
         </h1>
         <p className="fox-hint mt-1.5 text-sm">
-          2 walks a day keeps the scroll away
+          {t('welcome.subtitle')}
         </p>
         <div className="mt-14 flex justify-center">
           <button
             onClick={() => navigate('/goal')}
             className="fox-btn-orange flex h-[62px] w-[270px] items-center justify-center gap-2.5 rounded-full text-lg tracking-[0.02em]"
           >
-            lets start <span aria-hidden="true">→</span>
+            {t('welcome.cta')} <span aria-hidden="true">→</span>
           </button>
         </div>
         <button
           onClick={() => navigate('/')}
           className="mx-auto mt-3.5 block text-[13px] text-[#666]"
         >
-          ↺ replay loading
+          {t('welcome.replay')}
         </button>
       </div>
     </div>

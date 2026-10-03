@@ -4,19 +4,18 @@ import { KEYS, loadStr, saveStr } from '../lib/store';
 import { useHelperHints } from '../lib/helper';
 import { useAutoGreet } from '../lib/voice';
 import { useToast } from '../lib/ui';
-
-const GREET = "Hey, I'm Foxit — what should I call you? 🦊";
-const INITIAL_BUBBLE = "Hey, I'm <b>Foxit</b> — what should I call you? 🦊";
+import { t, tv, useLang } from '../lib/i18n';
 
 // Port of username.html: pick a username (2–16 chars, [A-Za-z0-9_.-],
 // spaces become _). Stores foxit_username, then /dashboard.
 export default function Username() {
   const navigate = useNavigate();
-  useAutoGreet(GREET);
+  useLang();
+  useAutoGreet(t('username.greet'));
   useHelperHints();
   const { toast, toastEl } = useToast();
   const [name, setName] = useState(() => loadStr(KEYS.username, ''));
-  const [bubble, setBubble] = useState(INITIAL_BUBBLE);
+  const [bubble, setBubble] = useState(() => t('username.bubble_initial'));
   const [done, setDone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const timer = useRef(0);
@@ -26,19 +25,19 @@ export default function Username() {
   const submit = () => {
     const v = name.trim().replace(/\s+/g, '_').slice(0, 16);
     if (v.length < 2) {
-      setBubble('Give me at least <b>2 letters</b> please! 🦊');
-      toast('Give me at least 2 letters please!');
+      setBubble(t('username.error_short_bubble'));
+      toast(t('username.error_short_toast'));
       inputRef.current?.focus();
       return;
     }
     if (!/^[A-Za-z0-9_.-]+$/.test(v)) {
-      setBubble('Letters, numbers, <b>_ . -</b> only please!');
-      toast('Letters, numbers, _ . - only please!');
+      setBubble(t('username.error_chars_bubble'));
+      toast(t('username.error_chars_toast'));
       inputRef.current?.focus();
       return;
     }
     saveStr(KEYS.username, v);
-    setBubble(`Nice to meet you, <b>${v}</b>! Let's go!`);
+    setBubble(tv('username.success_bubble', { name: v }));
     setDone(true);
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => navigate('/dashboard'), 600);
@@ -54,15 +53,15 @@ export default function Username() {
         <div className="mx-auto aspect-square w-[min(68vw,220px)]">
           <img
             src="./foxit-asking.png"
-            alt="Foxit asking"
+            alt={t('username.alt')}
             className="block h-full w-full object-contain drop-shadow-[0_8px_32px_rgba(255,107,53,0.35)]"
           />
         </div>
         <h1 className="mt-3 text-2xl font-semibold leading-[1.3] tracking-[-0.02em]">
-          Pick a username
+          {t('username.title')}
         </h1>
         <p className="fox-hint mt-1.5 text-sm">
-          2-16 letters — this shows on your runs
+          {t('username.subtitle')}
         </p>
 
         <div className="mt-5 flex items-center rounded-full border border-[#222] bg-[#111] py-1.5 pl-5 pr-1.5">
@@ -72,7 +71,7 @@ export default function Username() {
             type="text"
             maxLength={16}
             autoComplete="nickname"
-            placeholder="e.g. fox_runner"
+            placeholder={t('username.placeholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
@@ -88,7 +87,7 @@ export default function Username() {
             onClick={submit}
             className="fox-btn-orange flex h-[62px] w-[270px] items-center justify-center gap-2.5 rounded-full text-lg tracking-[0.02em]"
           >
-            {done ? 'lets go' : 'continue'}{' '}
+            {done ? t('username.go') : t('username.continue')}{' '}
             <span aria-hidden="true">→</span>
           </button>
         </div>
@@ -96,7 +95,7 @@ export default function Username() {
           onClick={() => navigate('/schedule')}
           className="mx-auto mt-3.5 block text-[13px] text-[#666]"
         >
-          ← back
+          {t('username.back')}
         </button>
       </div>
       {toastEl}

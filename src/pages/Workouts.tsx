@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import TabBar from '../components/TabBar';
 import { KEYS, doneKey, loadStr } from '../lib/store';
+import { t, tv, useLang } from '../lib/i18n';
 import { useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
 import { useToast } from '../lib/ui';
@@ -63,7 +64,7 @@ const JUNK = new Set([
   'style', 'none', 'nah', 'yep', 'yup', 'nahh', 'pro',
 ]);
 
-const JUNK_TOAST = 'Name a real workout — like “calf raises” or “neck rolls”';
+const JUNK_TOAST_KEY = 'workouts.junk_toast';
 
 function looksLikeWorkout(raw: string): string | false {
   const w = raw
@@ -85,6 +86,7 @@ function looksLikeWorkout(raw: string): string | false {
 }
 
 export default function Workouts() {
+  useLang();
   const navigate = useNavigate();
   const { toast, toastEl } = useToast();
   const [query, setQuery] = useState('');
@@ -104,7 +106,7 @@ export default function Workouts() {
     return s;
   });
 
-  useAutoGreet(`Yo! I'm Foxit Cool — let's train, ${name}!`);
+  useAutoGreet(tv('workouts.greet_voice', { name }));
 
   const filtered = useMemo(() => {
     const v = query.trim().toLowerCase();
@@ -122,7 +124,7 @@ export default function Workouts() {
   const handleCustomGo = () => {
     const v = looksLikeWorkout(customName.slice(0, 24));
     if (!v) {
-      toast(JUNK_TOAST);
+      toast(t(JUNK_TOAST_KEY));
       return;
     }
     navigate(customURL(v));
@@ -132,7 +134,7 @@ export default function Workouts() {
     const raw = query.trim().slice(0, 24);
     const v = looksLikeWorkout(raw);
     if (raw && !v) {
-      toast(JUNK_TOAST);
+      toast(t(JUNK_TOAST_KEY));
       return;
     }
     navigate(customURL(v || 'Freestyle'));
@@ -156,7 +158,7 @@ export default function Workouts() {
       <div className="mx-auto w-full max-w-[380px] text-center">
         <div className="mb-2.5 flex items-center justify-between">
           <Link to="/dashboard" className="text-[13px] font-extrabold text-[#999] no-underline">
-            ← dashboard
+            {t('workouts.back_dashboard')}
           </Link>
           <b className="text-[17px] tracking-tight">
             fox<span className="text-[#FF6B35]">it</span>
@@ -165,7 +167,7 @@ export default function Workouts() {
         </div>
 
         <div className="mb-3.5 rounded-2xl border border-[#222] bg-[#111] px-4 py-3.5 text-[15px]">
-          Yo! I&apos;m <b className="text-[#FF6B35]">Foxit Cool</b> — let&apos;s train,{' '}
+          {t('workouts.greet_prefix')} <b className="text-[#FF6B35]">Foxit Cool</b> {t('workouts.greet_mid')}{' '}
           <b className="text-[#FF6B35]">{name}</b>!
         </div>
 
@@ -175,7 +177,7 @@ export default function Workouts() {
               className="block h-full w-full object-contain"
               style={{ filter: 'drop-shadow(0 8px 32px rgba(46,124,246,.45))' }}
               src="./foxit-cool.png"
-              alt="Foxit Cool welcoming you"
+              alt={t('workouts.alt_fox_cool')}
               onError={() => setFoxOk(false)}
             />
           ) : (
@@ -187,8 +189,8 @@ export default function Workouts() {
           )}
         </div>
 
-        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">Workouts</h1>
-        <p className="fox-hint mt-1.5 text-sm">Pick your posture — scroll less, move more</p>
+        <h1 className="mt-3 text-[28px] font-semibold tracking-tight">{t('workouts.title')}</h1>
+        <p className="fox-hint mt-1.5 text-sm">{t('workouts.subtitle')}</p>
 
         <div className="mt-3.5 flex items-center gap-2 rounded-full border border-[#222] bg-[#111] px-4 py-2">
           <span aria-hidden="true" className="text-[#555]">⌕</span>
@@ -196,7 +198,7 @@ export default function Workouts() {
             id="q"
             type="text"
             autoComplete="off"
-            placeholder="Muscle or move: legs, jumping jacks…"
+            placeholder={t('workouts.search_ph')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="min-w-0 flex-1 border-none bg-transparent text-sm font-semibold text-white outline-none"
@@ -209,7 +211,7 @@ export default function Workouts() {
             type="text"
             maxLength={24}
             autoComplete="off"
-            placeholder="Or type ANY workout: neck, calves…"
+            placeholder={t('workouts.custom_ph')}
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             onKeyDown={(e) => {
@@ -219,21 +221,21 @@ export default function Workouts() {
           />
           <select
             id="customMotion"
-            aria-label="tracking motion"
+            aria-label={t('workouts.motion_label')}
             value={customMotion}
             onChange={(e) => setCustomMotion(e.target.value)}
             className="w-[118px] flex-none rounded-xl border border-[#333] bg-[#0a0a0a] px-1.5 py-2.5 text-[13px] font-bold text-white focus:border-[#2E7CF6] focus:outline-none"
           >
             {MOTIONS.map((m) => (
               <option key={m.value} value={m.value}>
-                {m.label}
+                {t('workouts.motion_' + m.value)}
               </option>
             ))}
           </select>
           <button
             id="customGo"
-            data-hint="start custom workout"
-            aria-label="start custom workout"
+            data-hint={t('workouts.hint_custom_go')}
+            aria-label={t('workouts.hint_custom_go')}
             onClick={handleCustomGo}
             className="w-[52px] flex-none cursor-pointer rounded-xl border-2 border-b-4 border-[#B34A1F] bg-[#2E7CF6] text-[18px] font-black text-white active:translate-y-0.5 active:border-b-2"
           >
@@ -241,19 +243,19 @@ export default function Workouts() {
           </button>
         </div>
         <div className="fox-hint mt-1.5 text-[11px]">
-          Preset buttons are just suggestions — name anything, pick how it&apos;s tracked, train.
+          {t('workouts.preset_note')}
         </div>
 
         {showNoHit && (
           <div className="mt-2.5 rounded-[14px] border border-dashed border-[#444] bg-[#111] p-3 text-[13px] text-[#999]">
-            <span>No preset for &ldquo;{query.trim()}&rdquo; — train it your way:</span>
+            <span>{tv('workouts.nohit_text', { query: query.trim() })}</span>
             <button
               id="noHitGo"
-              data-hint="train it anyway"
+              data-hint={t('workouts.hint_nohit')}
               onClick={handleNoHitGo}
               className="mt-2 w-full cursor-pointer rounded-xl border-2 border-[#B34A1F] bg-[#2E7CF6] py-2.5 text-sm font-black text-white"
             >
-              Train it anyway →
+              {t('workouts.nohit_btn')}
             </button>
           </div>
         )}
@@ -264,7 +266,7 @@ export default function Workouts() {
             return (
               <button
                 key={c.p}
-                data-hint={`train ${c.p}`}
+                data-hint={t('workouts.hint_train_' + c.p)}
                 onClick={() => navigate(`/verify?group=${c.p}`)}
                 style={done ? { background: 'rgba(46,124,246,.14)', boxShadow: '0 0 0 1.5px rgba(46,124,246,.7)' } : undefined}
                 className="cursor-pointer rounded-2xl border border-transparent bg-white/[.04] px-0.5 pb-2 pt-2.5 text-white active:translate-y-0.5"
@@ -272,14 +274,14 @@ export default function Workouts() {
                 <span className="block">
                   <img
                     src={c.img}
-                    alt={c.label}
+                    alt={t('workouts.card_' + c.p)}
                     loading="lazy"
                     className="mx-auto block h-[46px] w-[46px] object-contain"
                     style={{ filter: 'drop-shadow(0 4px 12px rgba(255,107,53,.3))' }}
                   />
                 </span>
                 <small className="mt-1 block text-[10px] font-extrabold text-[#999]">
-                  {c.label}
+                  {t('workouts.card_' + c.p)}
                   {done ? ' ✓' : ''}
                 </small>
               </button>
@@ -290,12 +292,12 @@ export default function Workouts() {
         <div className="mt-[18px]">
           <button
             id="goBtn"
-            data-hint="start workout"
+            data-hint={t('workouts.start_btn')}
             onClick={handleNext}
             className="fox-btn-primary flex h-[60px] w-full cursor-pointer items-center justify-center gap-2.5 rounded-[18px] text-[18px] active:translate-y-0.5"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,.4)' }}
           >
-            start workout <span aria-hidden="true">→</span>
+            {t('workouts.start_btn')} <span aria-hidden="true">→</span>
           </button>
         </div>
       </div>

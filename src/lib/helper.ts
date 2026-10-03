@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { t } from './i18n';
 import { KEYS } from './store';
 
 /**
@@ -8,35 +9,35 @@ import { KEYS } from './store';
  * listen buttons exist anywhere — voice lives only on Models.
  */
 const HINTS: Record<string, string> = {
-  runBtn: 'start a run',
-  workoutsBtn: 'open workouts',
-  modelsBtn: 'open models & voices',
-  spotsBtn: 'show your spots',
-  mapToggle: 'map controls',
-  gpsBtn: 'jump to my location',
-  zoomIn: 'zoom in',
-  zoomOut: 'zoom out',
-  addBtn: 'save a new spot',
-  startPointBtn: 'set run start',
-  searchBtn: 'search places',
-  searchClose: 'close search',
-  spotCancel: 'cancel',
-  spotSave: 'save spot',
-  profileClose: 'close profile',
-  settingsBtn: 'open settings',
-  settingsClose: 'close settings',
-  setNameSave: 'save name',
-  goalSave: 'save goal',
+  runBtn: 'hints.run_btn',
+  workoutsBtn: 'hints.workouts_btn',
+  modelsBtn: 'hints.models_btn',
+  spotsBtn: 'hints.spots_btn',
+  mapToggle: 'hints.map_toggle',
+  gpsBtn: 'hints.gps_btn',
+  zoomIn: 'hints.zoom_in',
+  zoomOut: 'hints.zoom_out',
+  addBtn: 'hints.add_btn',
+  startPointBtn: 'hints.start_point_btn',
+  searchBtn: 'hints.search_btn',
+  searchClose: 'hints.search_close',
+  spotCancel: 'hints.spot_cancel',
+  spotSave: 'hints.spot_save',
+  profileClose: 'hints.profile_close',
+  settingsBtn: 'hints.settings_btn',
+  settingsClose: 'hints.settings_close',
+  setNameSave: 'hints.set_name_save',
+  goalSave: 'hints.goal_save',
 };
 
 export function hintFor(el: HTMLElement): string | null {
   if (el.dataset?.hint) return el.dataset.hint;
   const id = el.id || '';
-  if (id && HINTS[id]) return HINTS[id];
-  const t = (el.textContent || '').trim().toLowerCase();
+  if (id && HINTS[id]) return t(HINTS[id]);
+  const t2 = (el.textContent || '').trim().toLowerCase();
   // fall back to matching by visible label for links/buttons
-  for (const [key, h] of Object.entries(HINTS)) {
-    if (t && key.toLowerCase().startsWith(t.slice(0, 4)) && t.length > 3) return h;
+  for (const [key, hkey] of Object.entries(HINTS)) {
+    if (t2 && key.toLowerCase().startsWith(t2.slice(0, 4)) && t2.length > 3) return t(hkey);
   }
   return null;
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import TabBar from '../components/TabBar';
 import { doneKey, saveStr } from '../lib/store';
+import { t, tv, useLang } from '../lib/i18n';
 import { stopVoice, useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
@@ -227,6 +228,7 @@ function escapeHtml(s: string): string {
 }
 
 export default function Verify() {
+  useLang();
   const [params] = useSearchParams();
   const group = params.get('group') ?? 'legs';
   const customName = (params.get('custom') ?? '').trim().slice(0, 24);
@@ -245,7 +247,7 @@ export default function Verify() {
   const [hasStarted, setHasStarted] = useState(false);
   const [denied, setDenied] = useState(false);
   const [done, setDone] = useState(false);
-  const [phaseHtml, setPhaseHtml] = useState('Tap <b>start</b> to begin');
+  const [phaseHtml, setPhaseHtml] = useState(t('verify.phase_tap_start'));
   const [runId, setRunId] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -257,7 +259,7 @@ export default function Verify() {
   goalRef.current = goal;
 
   useAutoGreet(
-    `${plan.name} — ${plan.ex} × ${plan.target} Full range only: photo uploads can't count.`,
+    tv('verify.greet_voice', { name: plan.name, ex: plan.ex, target: plan.target }),
   );
   useHelperHints([active, denied, done]);
 
@@ -336,7 +338,7 @@ export default function Verify() {
       setReps(g);
       setDone(true);
       setActive(false);
-      if (!cancelled) setPhaseHtml(`<b>Verified!</b> ${safeEx} × ${g}`);
+      if (!cancelled) setPhaseHtml(tv('verify.phase_verified', { ex: safeEx, count: g }));
     };
 
     const doStop = (unverified: boolean) => {
@@ -345,7 +347,7 @@ export default function Verify() {
       setActive(false);
       if (unverified) {
         lastPhase = '';
-        setPhaseHtml('Stopped — reps only count with live verification');
+        setPhaseHtml(t('verify.phase_stopped'));
       }
     };
 
@@ -416,10 +418,10 @@ export default function Verify() {
         if (!armed) {
           say(
             lastLm
-              ? 'Locking on — hold still a moment'
+              ? t('verify.phase_locking')
               : planSnap.faceMode
-                ? 'Bring your face into frame — eyes & mouth visible'
-                : 'Fit your whole body in frame — I only count real people',
+                ? t('verify.phase_face')
+                : t('verify.phase_body'),
           );
           return;
         }
@@ -431,25 +433,25 @@ export default function Verify() {
           okFrames = 0;
           lockTorso = 0;
           jawRef = null;
-          say('I can barely see you — better light or move closer');
+          say(t('verify.phase_dark'));
           return;
         }
         let downTh = planSnap.down;
         let upTh = planSnap.up;
-        let niceDown = 'depth';
+        let niceDown = t('verify.part_depth');
         if (planSnap.faceMode === 'jaw') {
           if (jawRef === null) jawRef = v;
           if (phase === 'down') jawRef = Math.min(jawRef, v); // calibrate to your closed mouth
           downTh = jawRef * 1.18;
           upTh = jawRef * 1.55;
-          niceDown = 'mouth';
+          niceDown = t('verify.part_mouth');
         } else if (planSnap.faceMode === 'neck') {
-          niceDown = 'chin';
+          niceDown = t('verify.part_chin');
         }
         if (phase === 'up' && v <= downTh) {
           phase = 'down';
           tDown = now;
-          say(`Good ${exLower} ${niceDown}! Now extend`);
+          say(tv('verify.phase_good', { ex: exLower, part: niceDown }));
         } else if (phase === 'down' && v >= upTh && now - tDown > 250) {
           phase = 'up';
           repCount++;
@@ -458,9 +460,9 @@ export default function Verify() {
             doFinish();
             return;
           }
-          say(`Rep <b>${repCount}</b> counted! ${g - repCount} to go`);
+          say(tv('verify.phase_rep', { count: repCount, left: g - repCount }));
         } else if (phase === 'up') {
-          say(`Do a full ${exLower} — I'll count it`);
+          say(tv('verify.phase_do_full', { ex: exLower }));
         }
       }
     };
@@ -476,7 +478,7 @@ export default function Verify() {
       } catch {
         if (!cancelled) {
           setDenied(true);
-          setPhaseHtml('Camera needed for live verification');
+          setPhaseHtml(t('verify.phase_camera_needed'));
           setActive(false);
         }
         return;
@@ -486,13 +488,13 @@ export default function Verify() {
         return;
       }
       lastPhase = '';
-      setPhaseHtml('Loading on-device pose model…');
+      setPhaseHtml(t('verify.phase_loading_model'));
       try {
         landmarker = await ensureLandmarker();
       } catch {
         stopTracks();
         if (!cancelled) {
-          setPhaseHtml('Pose model needs internet once to load');
+          setPhaseHtml(t('verify.phase_model_offline'));
           setActive(false);
         }
         return;
@@ -530,7 +532,7 @@ export default function Verify() {
       setActive(true);
       lastT = 0;
       lastPhase = '';
-      setPhaseHtml(`Live! Do full-range ${exLower} — ${g} to verify`);
+      setPhaseHtml(tv('verify.phase_live', { ex: exLower, count: g }));
       loop();
     };
 
@@ -569,7 +571,7 @@ export default function Verify() {
       <div className="mx-auto w-full max-w-[400px] text-center">
         <div className="mb-2.5 flex items-center justify-between">
           <Link to="/workouts" className="text-[13px] font-extrabold text-[#999] no-underline">
-            ← workouts
+            {t('verify.back_workouts')}
           </Link>
           <b className="text-[17px] tracking-tight">
             fox<span className="text-[#FF6B35]">it</span>
@@ -579,10 +581,10 @@ export default function Verify() {
 
         <div className="mb-3 rounded-2xl border border-[#222] bg-[#111] px-3.5 py-3 text-sm">
           <b className="text-[#FF6B35]">
-            {plan.name} — {plan.ex} × {goal}
+            {tv('verify.plan_title', { name: plan.name, ex: plan.ex, goal })}
           </b>
           <br />
-          Full range only: photo uploads can&apos;t count.
+          {t('verify.plan_subtitle')}
         </div>
 
         <div
@@ -600,12 +602,12 @@ export default function Verify() {
                 className="h-[130px] w-[130px] object-contain"
                 style={{ filter: 'drop-shadow(0 8px 32px rgba(255,107,53,.35))' }}
                 src="./foxit-asking.png"
-                alt="Foxit waiting for camera"
+                alt={t('verify.alt_waiting')}
               />
               <p className="px-6 text-[13px] text-[#999]">
-                Camera stays OFF until you tap start.
+                {t('verify.idle_cam_off')}
                 <br />
-                Nothing is recorded or uploaded — pose runs on-device.
+                {t('verify.idle_private')}
               </p>
             </div>
           )}
@@ -628,12 +630,12 @@ export default function Verify() {
 
         <div className="mt-3 flex items-center justify-center gap-3">
           <small className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[#999]">
-            reps
+            {t('verify.reps_label')}
           </small>
           <button
             id="repMinus"
-            data-hint="fewer reps"
-            aria-label="fewer reps"
+            data-hint={t('verify.fewer_reps')}
+            aria-label={t('verify.fewer_reps')}
             onClick={() => changeGoal(-1)}
             disabled={active}
             className="h-11 w-11 cursor-pointer rounded-full border-2 border-[#333] bg-[#111] text-xl font-black text-white active:border-[#FF6B35] disabled:opacity-35"
@@ -645,8 +647,8 @@ export default function Verify() {
           </div>
           <button
             id="repPlus"
-            data-hint="more reps"
-            aria-label="more reps"
+            data-hint={t('verify.more_reps')}
+            aria-label={t('verify.more_reps')}
             onClick={() => changeGoal(1)}
             disabled={active}
             className="h-11 w-11 cursor-pointer rounded-full border-2 border-[#333] bg-[#111] text-xl font-black text-white active:border-[#FF6B35] disabled:opacity-35"
@@ -658,32 +660,33 @@ export default function Verify() {
         <div className="mt-3 flex gap-2">
           <button
             id="startBtn"
-            data-hint="begin live check"
+            data-hint={t('verify.hint_begin')}
             onClick={handleStart}
             disabled={active}
             className="fox-btn-primary flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl text-[17px] disabled:opacity-40"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,.4)' }}
           >
-            start ●
+            {t('verify.start_btn')}
           </button>
           <button
             id="stopBtn"
-            data-hint="end session"
+            data-hint={t('verify.hint_end')}
             onClick={handleStop}
             disabled={!active}
             className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-[#333] bg-[#111] text-[17px] font-black text-white active:translate-y-0.5 disabled:opacity-40"
           >
-            stop ■
+            {t('verify.stop_btn')}
           </button>
         </div>
 
         {denied && (
           <div className="mt-3 rounded-2xl border-2 border-[#FF6B35] bg-[#1a120e] p-3.5 text-left text-sm">
-            <b className="text-[#FF6B35]">Camera blocked.</b>
+            <b className="text-[#FF6B35]">{t('verify.denied_title')}</b>
             <br />
-            Live verification is required for this workout — uploaded photos can&apos;t count.
-            Please allow camera access (tap the lock icon in the address bar → Camera → Allow)
-            and try again.
+            {t('verify.denied_body')}
+            <br />
+            {t('verify.denied_help')}{' '}
+            {t('verify.denied_retry')}
           </div>
         )}
 
@@ -691,23 +694,22 @@ export default function Verify() {
           <div className="mt-3 rounded-2xl border-2 border-[#2E7CF6] bg-[#0e1a12] p-4">
             <img
               src="./foxit-running.png"
-              alt="Foxit celebrating"
+              alt={t('verify.alt_celebrate')}
               className="mx-auto mb-1.5 block h-[90px] w-[90px] object-contain"
               style={{ filter: 'drop-shadow(0 8px 24px rgba(46,124,246,.5))' }}
             />
-            <b className="text-lg text-[#2E7CF6]">Workout verified!</b>
+            <b className="text-lg text-[#2E7CF6]">{t('verify.done_title')}</b>
             <div className="text-sm">
-              {plan.ex} × {goal} verified live — no photos, all you!
+              {tv('verify.done_detail', { ex: plan.ex, goal })}
             </div>
             <Link to="/workouts" className="mt-2.5 inline-block font-extrabold text-[#FF6B35] no-underline">
-              ← back to workouts
+              {t('verify.done_back')}
             </Link>
           </div>
         )}
 
         <div className="mt-3 text-xs text-[#777]">
-          <b className="text-[#999]">Private by design:</b> live preview only, pose detection
-          runs 100% on-device, zero footage saved or sent anywhere.
+          <b className="text-[#999]">{t('verify.privacy_title')}</b> {t('verify.privacy_body')}
         </div>
       </div>
       </div>

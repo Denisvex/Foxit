@@ -1,17 +1,19 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHelperHints } from '../lib/helper';
+import { t, useLang } from '../lib/i18n';
 
 // Port of index.html: splash screen, auto-redirects to /welcome after
 // 2400ms. Any click skips straight ahead. No voice greeting here — the
 // original has no speech script on this page.
 export default function Loading() {
   const navigate = useNavigate();
+  useLang();
   useHelperHints();
 
   useEffect(() => {
-    const t = window.setTimeout(() => navigate('/welcome'), 2400);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => navigate('/welcome'), 2400);
+    return () => window.clearTimeout(timer);
   }, [navigate]);
 
   return (
@@ -24,7 +26,7 @@ export default function Loading() {
         <div className="mx-auto aspect-square w-[min(72vw,300px)] animate-[fox-breathe_2.2s_ease-in-out_0.8s_infinite]">
           <img
             src="./Foxit-loadingpage.png"
-            alt="Foxit fox mascot"
+            alt={t('loading.alt')}
             className="block h-full w-full object-contain drop-shadow-[0_8px_32px_rgba(255,107,53,0.35)]"
           />
         </div>
@@ -32,7 +34,7 @@ export default function Loading() {
           fox<span className="text-[#FF6B35]">it</span>
         </h1>
         <p className="fox-hint mt-2 text-[13px] uppercase tracking-[0.16em]">
-          walk more · scroll less
+          {t('loading.tagline')}
         </p>
         <div className="mx-auto mt-6 h-1 w-[200px] overflow-hidden rounded-full bg-[#1a1a1a]">
           <div className="h-full w-[40%] rounded-full bg-[#FF6B35] animate-[fox-load_1.4s_ease-in-out_infinite]" />
