@@ -15,6 +15,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import TabBar from '../components/TabBar';
+import { musicEnabled, setMusicEnabled } from '../lib/music';
 import { KEYS, load, loadStr, save, saveStr } from '../lib/store';
 import { useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
@@ -349,6 +350,7 @@ export default function Dashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [nameInput, setNameInput] = useState('');
+  const [musicOn, setMusicOn] = useState(() => musicEnabled());
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -1813,6 +1815,27 @@ export default function Dashboard() {
             <Link to="/schedule" className="block mt-3.5 text-center text-[#FF6B35] text-sm font-extrabold no-underline">
               edit run times →
             </Link>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Music</div>
+            <div className="mt-2 flex gap-2">
+              {[
+                { v: true, label: 'on' },
+                { v: false, label: 'off' },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  onClick={() => {
+                    setMusicOn(o.v);
+                    setMusicEnabled(o.v);
+                  }}
+                  aria-pressed={musicOn === o.v}
+                  className={`flex-1 rounded-[14px] border-2 py-2.5 text-sm font-black cursor-pointer ${musicOn === o.v ? 'border-[#FF6B35] text-[#FF6B35]' : 'border-[#2a2a2e] text-[#8b8b96]'}`}
+                  style={musicOn === o.v ? { background: 'rgba(255,107,53,.12)' } : { background: 'rgba(255,255,255,.03)' }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <div className="fox-hint mt-1.5 text-center text-[11px] font-bold">soft ambient loop, made on your phone</div>
             <button id="settingsClose" onClick={() => setSettingsOpen(false)} className="fox-btn-orange block w-full mt-4 rounded-[14px] text-base py-[11px] cursor-pointer">
               done ✓
             </button>

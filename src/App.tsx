@@ -1,5 +1,6 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
+import { musicEnabled, startMusic, stopMusic } from './lib/music';
 import Loading from './pages/Loading';
 import Welcome from './pages/Welcome';
 import Goal from './pages/Goal';
@@ -22,9 +23,37 @@ function Fallback() {
   );
 }
 
+// Browsers only allow audio after a user gesture: start the ambient
+// music on the first tap/keypress (if enabled), pause when hidden.
+function MusicStarter() {
+  useEffect(() => {
+    const kick = () => {
+      if (musicEnabled()) startMusic();
+    };
+    const onVis = () => {
+      if (document.hidden) stopMusic();
+      else kick();
+    };
+    const onHide = () => stopMusic();
+    window.addEventListener('pointerdown', kick);
+    window.addEventListener('keydown', kick);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onHide);
+    return () => {
+      window.removeEventListener('pointerdown', kick);
+      window.removeEventListener('keydown', kick);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onHide);
+      stopMusic();
+    };
+  }, []);
+  return null;
+}
+
 export default function App() {
   return (
     <HashRouter>
+      <MusicStarter />
       <Routes>
         <Route path="/" element={<Loading />} />
         <Route path="/welcome" element={<Welcome />} />

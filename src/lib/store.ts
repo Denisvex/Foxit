@@ -11,6 +11,7 @@ export const KEYS = {
   material: 'foxit_material',
   log: 'foxit_log',
   voiceModel: 'foxit_voice_model',
+  music: 'foxit_music',
 } as const;
 
 export function load<T>(key: string, fallback: T): T {
