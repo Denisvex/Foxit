@@ -19,6 +19,11 @@ let nextPad = 0;
 let nextPluck = 0;
 let chordStep = 0;
 
+export function audioContext(): AudioContext | null {
+  ensure();
+  return ctx;
+}
+
 export function musicEnabled(): boolean {
   try {
     return loadStr(KEYS.music, '1') === '1';

@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import TabBar from '../components/TabBar';
 import { musicEnabled, setMusicEnabled } from '../lib/music';
+import { setSfxEnabled, sfxEnabled } from '../lib/sfx';
 import { KEYS, load, loadStr, save, saveStr } from '../lib/store';
 import { useAutoGreet } from '../lib/voice';
 import { useHelperHints } from '../lib/helper';
@@ -351,6 +352,7 @@ export default function Dashboard() {
   const [goalInput, setGoalInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [musicOn, setMusicOn] = useState(() => musicEnabled());
+  const [sfxOn, setSfxOn] = useState(() => sfxEnabled());
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -1836,6 +1838,26 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="fox-hint mt-1.5 text-center text-[11px] font-bold">soft ambient loop, made on your phone</div>
+            <div className="block mt-4 text-[11px] font-extrabold tracking-[.1em] uppercase text-[#999] text-center">Button sounds</div>
+            <div className="mt-2 flex gap-2">
+              {[
+                { v: true, label: 'on' },
+                { v: false, label: 'off' },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  onClick={() => {
+                    setSfxOn(o.v);
+                    setSfxEnabled(o.v);
+                  }}
+                  aria-pressed={sfxOn === o.v}
+                  className={`flex-1 rounded-[14px] border-2 py-2.5 text-sm font-black cursor-pointer ${sfxOn === o.v ? 'border-[#FF6B35] text-[#FF6B35]' : 'border-[#2a2a2e] text-[#8b8b96]'}`}
+                  style={sfxOn === o.v ? { background: 'rgba(255,107,53,.12)' } : { background: 'rgba(255,255,255,.03)' }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
             <button id="settingsClose" onClick={() => setSettingsOpen(false)} className="fox-btn-orange block w-full mt-4 rounded-[14px] text-base py-[11px] cursor-pointer">
               done ✓
             </button>

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { musicEnabled, startMusic, stopMusic } from './lib/music';
+import { initSfx } from './lib/sfx';
 import Loading from './pages/Loading';
 import Welcome from './pages/Welcome';
 import Goal from './pages/Goal';
@@ -27,6 +28,7 @@ function Fallback() {
 // music on the first tap/keypress (if enabled), pause when hidden.
 function MusicStarter() {
   useEffect(() => {
+    initSfx();
     const kick = () => {
       if (musicEnabled()) startMusic();
     };
