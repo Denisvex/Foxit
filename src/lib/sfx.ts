@@ -1,28 +1,9 @@
 import { audioContext } from './music';
-import { loadStr, saveStr } from './store';
 
 // Tiny tactile click sounds, synthesized with Web Audio. No files.
-// Different actions get different clicks: primary actions pop,
- // navigation ticks, closes thunk.
+// Always on. Different actions get different clicks: primary actions
+// pop, navigation ticks, closes thunk.
 export type SfxKind = 'tap' | 'confirm' | 'nav' | 'toggle' | 'close' | 'success';
-
-const SFX_KEY = 'foxit_sfx';
-
-export function sfxEnabled(): boolean {
-  try {
-    return loadStr(SFX_KEY, '1') === '1';
-  } catch {
-    return true;
-  }
-}
-
-export function setSfxEnabled(on: boolean): void {
-  try {
-    saveStr(SFX_KEY, on ? '1' : '0');
-  } catch {
-    /* ignore */
-  }
-}
 
 function blip(
   ctx: AudioContext,
@@ -46,7 +27,6 @@ function blip(
 }
 
 export function playSfx(kind: SfxKind): void {
-  if (!sfxEnabled()) return;
   const ctx = audioContext();
   if (!ctx) return;
   try {
@@ -99,7 +79,6 @@ export function initSfx(): void {
   inited = true;
   document.addEventListener('pointerdown', (e) => {
     try {
-      if (!sfxEnabled()) return;
       const t = e.target instanceof Element ? e.target.closest('button,a') : null;
       if (!t || t.hasAttribute('disabled')) return;
       const explicit = t.getAttribute('data-sfx');

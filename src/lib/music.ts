@@ -1,23 +1,29 @@
 import { KEYS, loadStr, saveStr } from './store';
 
-// Slight generative background music, 100% synthesized with Web Audio.
+// Playful generative background music, 100% synthesized with Web Audio.
 // No audio files, nothing downloaded, runs fully on-device.
+// Bouncy I-V-vi-IV groove in C: bass pulse, bright chord stabs,
+// and a cheerful random-walk melody on top.
 
-const CHORDS: number[][] = [
+const STEP = 0.21; // ~143bpm eighth notes
+const BAR = 16; // steps per bar
+
+// one chord per bar: C, G, Am, F (root + third + fifth)
+const BARS: number[][] = [
+  [261.63, 329.63, 392.0],
+  [196.0, 246.94, 293.66],
+  [220.0, 261.63, 329.63],
   [174.61, 220.0, 261.63],
-  [146.83, 174.61, 220.0],
-  [130.81, 164.81, 196.0],
-  [164.81, 196.0, 246.94],
 ];
 
-const PENTA: number[] = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+const MELODY: number[] = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let schedTimer = 0;
-let nextPad = 0;
-let nextPluck = 0;
-let chordStep = 0;
+let nextStep = 0;
+let stepIdx = 0;
+let melIdx = 2;
 
 export function audioContext(): AudioContext | null {
   ensure();
@@ -61,40 +67,30 @@ function ensure(): boolean {
   }
 }
 
-function pad(freqs: number[], t: number): void {
-  if (!ctx || !master) return;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.05, t + 2.5);
-  g.gain.linearRampToValueAtTime(0, t + 8);
-  const f = ctx.createBiquadFilter();
-  f.type = 'lowpass';
-  f.frequency.value = 750;
-  g.connect(f);
-  f.connect(master);
-  freqs.forEach((fr) => {
-    if (!ctx) return;
-    const o = ctx.createOscillator();
-    o.type = 'triangle';
-    o.frequency.value = fr;
-    o.connect(g);
-    o.start(t);
-    o.stop(t + 8.5);
-  });
-}
-
-function pluck(fr: number, t: number): void {
+function tone(
+  freq: number,
+  t: number,
+  dur: number,
+  vol: number,
+  type: OscillatorType,
+  cutoff: number,
+): void {
   if (!ctx || !master) return;
   const o = ctx.createOscillator();
-  o.type = 'sine';
-  o.frequency.value = fr;
+  o.type = type;
+  o.frequency.value = freq;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0.09, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.value = cutoff;
   o.connect(g);
-  g.connect(master);
+  g.connect(f);
+  f.connect(master);
   o.start(t);
-  o.stop(t + 2.4);
+  o.stop(t + dur + 0.05);
 }
 
 export function startMusic(): void {
@@ -106,23 +102,37 @@ export function startMusic(): void {
   } catch {
     /* ignore */
   }
-  nextPad = ctx.currentTime + 0.3;
-  nextPluck = ctx.currentTime + 1.5;
+  nextStep = ctx.currentTime + 0.2;
+  stepIdx = 0;
+  melIdx = 2;
   schedTimer = window.setInterval(() => {
     if (!ctx || !musicEnabled()) return;
-    const ahead = ctx.currentTime + 1.2;
-    if (nextPad <= ahead) {
-      pad(CHORDS[chordStep % CHORDS.length], nextPad);
-      chordStep++;
-      nextPad += 8;
-    }
-    if (nextPluck <= ahead) {
-      if (Math.random() < 0.75) {
-        pluck(PENTA[Math.floor(Math.random() * PENTA.length)], nextPluck);
+    const ahead = ctx.currentTime + 0.8;
+    while (nextStep <= ahead) {
+      const bar = Math.floor(stepIdx / BAR) % BARS.length;
+      const s = stepIdx % BAR;
+      const chord = BARS[bar];
+      // bouncy bass: root on quarters, fifth pop at the turnaround
+      if (s % 4 === 0) tone(chord[0] / 2, nextStep, 0.32, 0.075, 'triangle', 900);
+      if (s === 14) tone(chord[2] / 2, nextStep, 0.25, 0.06, 'triangle', 900);
+      // bright chord stabs on the back half
+      if (s === 4 || s === 12) {
+        chord.forEach((fr) => tone(fr, nextStep, 1.1, 0.028, 'triangle', 2200));
       }
-      nextPluck += 2 + Math.random() * 2.5;
+      // cheerful melody: random walk, plays most eighths, skips some for bounce
+      if (s % 2 === 0 && Math.random() < 0.8) {
+        melIdx += Math.floor(Math.random() * 5) - 2;
+        melIdx = Math.max(0, Math.min(MELODY.length - 1, melIdx));
+        tone(MELODY[melIdx], nextStep, 0.32, 0.055, 'sine', 4000);
+        // playful hiccup: occasional quick 16th echo a third up
+        if (Math.random() < 0.25 && melIdx + 1 < MELODY.length) {
+          tone(MELODY[melIdx + 1], nextStep + STEP / 2, 0.22, 0.035, 'sine', 4000);
+        }
+      }
+      nextStep += STEP;
+      stepIdx++;
     }
-  }, 500);
+  }, 250);
 }
 
 export function stopMusic(): void {
